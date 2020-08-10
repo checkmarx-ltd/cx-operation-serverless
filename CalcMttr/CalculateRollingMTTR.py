@@ -618,6 +618,7 @@ def calculate_mttr_job(sourceES, targetES, job_name, source_index_name, query, s
         df_mttr['incidents_mean'] = df_mttr['incidents'].rolling(window=30,min_periods=1).sum()
         df_mttr['recovery_mean_time'] = df_mttr['recovery_time'].rolling(window=DAYS_BACK_TO_CALCULATE,min_periods=1).sum()/df_mttr['incidents_mean']
         #df_mttr_rolling = df_mttr_rolling.append(df_mttr)
+        df_mttr["index_name"] = source_index_name
         logger.warning(f"df_mttr for job_name {job_name} on all dates")
         logger.warning(df_mttr)
     
@@ -675,7 +676,8 @@ def main():
           ('recovery_time', float),
           ('incidents', int),
           ('recovery_mean_time',float),
-          ('incidents_mean',int)
+          ('incidents_mean',int),
+          ('index_name',object)
           ])
 
     data = np.empty(0, dtype=dtypes_rolling)
