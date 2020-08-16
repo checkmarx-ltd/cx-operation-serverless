@@ -65,18 +65,58 @@ class PipelineManagement:
     def __init__(self):
         
         load_dotenv()
-        ElasticConnectionString = os.getenv("ELASTIC_CONNECTIONSTRING")
-        ElasticHost = os.getenv("ELASTIC_HOST")
-        ElasticPort = os.getenv("ELASTIC_PORT")
-        ElasticUser= os.getenv("ELASTIC_USER")
-        ElasticPassword= os.getenv("ELASTIC_PASSWORD")
+        elastic_connection_string = os.getenv("ELASTIC_CONNECTIONSTRING")
+        elastic_host = os.getenv("ELASTIC_HOST")
+        elastic_port = os.getenv("ELASTIC_PORT")
+        elastic_user= os.getenv("ELASTIC_USER")
+        elastic_password= os.getenv("ELASTIC_PASSWORD")
 
         self.CIRCLECI_TOKEN= os.getenv("CIRCLECI_TOKEN")
 
-        self.es = Elasticsearch(ElasticConnectionString)
-        self.esConn = connect(host=ElasticHost,port=ElasticPort,user=ElasticUser,password=ElasticPassword)
+        self.es = Elasticsearch(elastic_connection_string)
+        self.esConn = connect(host=elastic_host,port=elastic_port,user=elastic_user,password=elastic_password)
         self.pipelines = []        
         self.logger = PipelineManagement.initLogger()
+
+    @property
+    def elastic_connection_string(self):
+        return self.__elastic_connection_string
+    
+    @elastic_connection_string.setter
+    def elastic_connection_string(self, value):
+        self.__elastic_connection_string = value
+    
+    @property
+    def elastic_host(self):
+        return self.__elastic_host
+    
+    @elastic_host.setter
+    def elastic_host(self, value):
+        self.__elastic_host = value
+
+    @property
+    def elastic_port(self):
+        return self.__elastic_port
+    
+    @elastic_port.setter
+    def elastic_port(self, value):
+        self.__elastic_port = value
+
+    @property
+    def elastic_user(self):
+        return self.__elastic_user
+    
+    @elastic_user.setter
+    def elastic_user(self, value):
+        self.__elastic_user = value
+
+    @property
+    def elastic_password(self):
+        return self.__elastic_password
+    
+    @elastic_password.setter
+    def elastic_password(self, value):
+        self.__elastic_password = value
            
     def getPopulationFromElasticsearch(self, calculateForce, start, end):
         """
@@ -295,22 +335,3 @@ class PipelineManagement:
 
 if __name__ == "__main__":
     PipelineManagement.main()
- 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#curl -u '8895d65398888c8e859e4e8851e73a1fde420de6:' -X GET https://circleci.com/api/v2/workflow/96834933-95b0-48de-a628-61cf6b975a89 | jq
-
