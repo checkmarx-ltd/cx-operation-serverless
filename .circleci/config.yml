@@ -8,6 +8,7 @@ jobs:
     executor: python/default
     steps:
       - checkout
+      - run: pip install pandas -y 
       - run:
           command: python CalcMttr/test_calcMttr.py
           
