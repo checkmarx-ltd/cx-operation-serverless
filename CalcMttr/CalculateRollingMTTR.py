@@ -638,7 +638,7 @@ def main():
     create_force = True
     
     # force re-calculate the last 30 days 
-    create_force_history = True
+    create_force_history = False
 
     logger.warning(f'create_force = {create_force}, create_force_history = {create_force_history}')
 
