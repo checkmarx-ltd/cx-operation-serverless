@@ -9,8 +9,8 @@ jobs:
     steps:
       - checkout
       - run:
-          command: ./manage.py test
-          name: Test
+          command: ls -al
+          
 
 workflows:
   main:
