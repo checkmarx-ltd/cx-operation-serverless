@@ -23,7 +23,6 @@ logger.addHandler(c_handler)
 class Test_TestMTTR(unittest.TestCase):
 
     def test_mttr_fixed_data(self):
-        return
                
         df =[]
 
@@ -50,33 +49,10 @@ class Test_TestMTTR(unittest.TestCase):
         incidents = int(grouped_df["incidents"])
         recovery_mean_time = recovery/incidents
 
-        
         self.assertEqual(recovery, 240.0)
-        #print (f"recovery  = {recovery}")
         self.assertEqual(incidents,2)
-        #print (f"incidents = {incidents}")
         self.assertEqual(recovery_mean_time,120.0)
-        #print(f"recovery_mean_time = {recovery_mean_time}")
-    '''
-    def test_mttr_calvulation(self):
-
-
-        load_dotenv()
-        targetESConnectionString = os.getenv("ELASTIC_CONNECTIONSTRING")
-        targetES = Elasticsearch(targetESConnectionString)
         
-        sourceES = targetES
-        
-        start = date(2020, 7, 16)
-        end   = date(2020, 7, 16)
-        job_name = "LumoGitHub/Lumo-Service-SASTProxy/master"
-        source_index_name = "jenkins-sca"
-        query = CalculateRollingMTTR.JENKINS_JOBS_POPULATION
-
-        population = []
-        population = CalculateRollingMTTR.get_population(sourceES, source_index_name, start, job_name, query, logger) 
-        df_mttr = CalculateRollingMTTR.calculate_mttr_job(sourceES, targetES, job_name, source_index_name, query, start, end, logger)
-    '''        
     def test_mttr_real_data(self):
 
         logger = logging.getLogger(__name__)
@@ -102,7 +78,6 @@ class Test_TestMTTR(unittest.TestCase):
         df_mttr = CalculateRollingMTTR.calculate_mttr_job(sourceES, targetES, job_name, source_index_name, query, start, end, logger)
         df_mttr  = df_mttr.tail(1)
 
-        #print(df_mttr)
         
         for index, row in df_mttr.iterrows():
             timestamp = row["timestamp"]
@@ -163,10 +138,6 @@ class Test_TestMTTR(unittest.TestCase):
 
         for row in results:
             recovery_time_sqlite = int(row["recovery_time"])
-
-        #print(recovery_time_sqlite)
-        #print(recovery_time_pandas)
-
 
         self.assertEqual(recovery_time_sqlite,recovery_time_pandas)
         
