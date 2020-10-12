@@ -9,6 +9,7 @@ import logging
 from logging import Logger
 from dotenv import load_dotenv
 import os
+from timeit import default_timer
 
 DAYS_BACK_TO_CALCULATE = 30
 INDEX_PREFIX = 'mttr-'
@@ -81,7 +82,7 @@ TFS_JOBS_POPULATION = """
 
 CIRCLECI_JOBS = """
 {
-"_source": ["name","created_at","status"],
+"_source": ["pipeline.project_slug","created_at","status"],
 "query": {
     "bool": {
       "must": [],
@@ -108,7 +109,7 @@ CIRCLECI_JOBS = """
 
 CIRCLECI_JOBS_POPULATION = """
 {
-"_source": ["name","created_at","status"],
+"_source": ["pipeline.project_slug","created_at","status"],
 "sort" : [
         { "created_at" : {"order" : "asc"}}],
 "query": {
@@ -120,7 +121,7 @@ CIRCLECI_JOBS_POPULATION = """
         },
         {
         "match_phrase": {
-            "name": "{0}"
+            "pipeline.project_slug": "{0}"
           }
         }
             ,
@@ -221,14 +222,36 @@ def get_all_jobs(sourceES, start,end, logger):
     all_jobs = None
 
     try:
+        start_time = default_timer()        
+              
         jenkins_jobs      = get_job_names(sourceES,LOGSTASH_INDEX_NAME, "JENKINS_JOBS",start, end, logger)
+        elapsed_time = default_timer() - start_time
+        logger.warning(f"get jenkins_job took {elapsed_time} seconds")
+        logger.warning(f"jenkins_jobs found between {start} and {end}: = {jenkins_jobs}")
+
+        start_time = default_timer()
         codebashing_jobs  = get_job_names(sourceES,CODEBASHING_INDEX_NAME, "JENKINS_JOBS",start, end, logger)
+        elapsed_time = default_timer() - start_time
+        logger.warning(f"get codebashing_jobs took {elapsed_time} seconds")
+        logger.warning(f"codebashing_jobs found between {start} and {end}: = {codebashing_jobs}")
+
+        start_time = default_timer()
         sca_jobs          = get_job_names(sourceES,SCA_INDEX_NAME, "JENKINS_JOBS",start, end, logger)
-        circleci_jobs     = get_job_names(sourceES,CIRCLECI_INDEX_NAME, "CIRCLECI_JOBS",start, end, logger)
-        #tfs_jobs          = get_job_names(sourceES,TFS_INDEX_NAME, "TFS_JOBS",start, end, logger)
+        elapsed_time = default_timer() - start_time
+        logger.warning(f"get sca_jobs took {elapsed_time} seconds")
+        logger.warning(f"sca_jobs found between {start} and {end}: = {sca_jobs}")
         
+        start_time = default_timer()
+        circleci_jobs     = get_job_names(sourceES,CIRCLECI_INDEX_NAME, "CIRCLECI_JOBS",start, end, logger)
+        elapsed_time = default_timer() - start_time
+        logger.warning(f"get circleci_jobs took {elapsed_time} seconds")
+        logger.warning(f"circleci_jobs found between {start} and {end}: = {circleci_jobs}")
+
+        #tfs_jobs          = get_job_names(sourceES,TFS_INDEX_NAME, "TFS_JOBS",start, end, logger)        
         #frames = [jenkins_jobs, codebashing_jobs, sca_jobs, circleci_jobs, tfs_jobs]
+
         frames = [jenkins_jobs, codebashing_jobs, sca_jobs, circleci_jobs]
+        
         
         all_jobs = pd.concat(frames)
 
@@ -249,7 +272,7 @@ def get_job_names(sourceES, index_name, query, start, end, logger):
         for hit in (res["hits"]["hits"]): 
             try:           
                 if (index_name == CIRCLECI_INDEX_NAME):
-                    new_row = {"job_name":  hit['_source']['name'],
+                    new_row = {"job_name":  hit['_source']['pipeline']['project_slug'],
                                 "query_name": query + "_POPULATION",
                                 "index_name": index_name
                         }
@@ -290,6 +313,7 @@ def get_population(sourceES, index_name, start, job_name, query, logger):
         end   = start
         start = end - timedelta(days=7)
         query = query.replace("{0}", job_name).replace("{1}", start.strftime("%Y-%m-%d")).replace("{2}", end.strftime("%Y-%m-%d"))
+        #logger.warning(query)
         df = pd.DataFrame(columns=["job_name","timestamp", "result"])
         res = sourceES.search(index=index_name, body=query, size = 1000)
     except Exception:
@@ -305,7 +329,7 @@ def get_population(sourceES, index_name, start, job_name, query, logger):
                     status = "FAILURE"
                 else:
                     status = status.upper()
-                new_row = {"job_name":  hit['_source']['name'],
+                new_row = {"job_name":  hit['_source']['pipeline']['project_slug'],
                            "timestamp": hit['_source']['created_at'],
                            "result":    status }
             elif (index_name == TFS_INDEX_NAME):
@@ -563,13 +587,16 @@ def delete_history_indexes(targetES, start, end, logger):
 
 
 def calculate_mttr_job(sourceES, targetES, job_name, source_index_name, query, start, end, logger):
+
+    start_time = default_timer()   
+
     dtypes = np.dtype([
 
           ('job_name', object),
           ('result', object),
           ('timestamp', datetime),
           ('recovery_time', float),
-          ('incidents', int)
+          ('incidents', int),
           ])
 
     data = np.empty(0, dtype=dtypes)
@@ -621,11 +648,16 @@ def calculate_mttr_job(sourceES, targetES, job_name, source_index_name, query, s
         df_mttr["index_name"] = source_index_name
         logger.warning(f"df_mttr for job_name {job_name} on all dates")
         logger.warning(df_mttr)
+
+    elapsed_time = default_timer() - start_time
+    logger.warning(f"Elapsed time for calculate_mttr_job functin with job name {job_name} took {elapsed_time} seconds")
     
     return df_mttr
 
 
 def main():
+
+    start_time = default_timer()
 
     load_dotenv()
     logger = init_logger()    
@@ -635,7 +667,7 @@ def main():
     sourceES = targetES
 
     # force re-calculate the last day 
-    create_force = True
+    create_force = False
     
     # force re-calculate the last 30 days 
     create_force_history = False
@@ -677,11 +709,13 @@ def main():
           ('incidents', int),
           ('recovery_mean_time',float),
           ('incidents_mean',int),
-          ('index_name',object)
+          ('index_name',object),
           ])
 
     data = np.empty(0, dtype=dtypes_rolling)
     df_mttr_rolling = pd.DataFrame(data)
+
+    start_time = default_timer()
 
     for index, row in jobs_name.iterrows():
 
@@ -710,6 +744,12 @@ def main():
 
     start = (today - timedelta(days = DAYS_BACK_TO_CALCULATE))
 
+    elapsed_time = default_timer() - start_time
+
+    logger.warning(f"Elapsed time for calculate mttr for all jobs took {elapsed_time} seconds")
+
+    start_time = default_timer()
+
     while start <= end:
 
         df = pd.DataFrame
@@ -736,7 +776,11 @@ def main():
                     logger.exception(f("Exception occurred target_index_name = {target_index_name}"))
                     raise
 
-        start = start + timedelta(days=1)  # increase day one by one  
+        start = start + timedelta(days=1)  # increase day one by one
+
+    elapsed_time = default_timer() - start_time
+    
+    logger.warning(f"Elapsed time for inserting all data to elasticsearch took {elapsed_time} seconds")  
 
 if __name__ == "__main__":
     main()
