@@ -15,6 +15,7 @@ DAYS_BACK_TO_CALCULATE = 30
 INDEX_PREFIX = 'mttr-'
 SCA_INDEX_NAME = "jenkins-sca"
 CODEBASHING_INDEX_NAME = "jenkins-codebahsing"
+IAST_INDEX_NAME = "iast_jenkins_jobs"
 LOGSTASH_INDEX_NAME = "logstash-jenkins"
 CIRCLECI_INDEX_NAME = "circleci"
 TFS_INDEX_NAME = "tfs"
@@ -222,19 +223,24 @@ def get_all_jobs(sourceES, start,end, logger):
     all_jobs = None
 
     try:
-        start_time = default_timer()        
-              
+        start_time = default_timer()                     
         jenkins_jobs      = get_job_names(sourceES,LOGSTASH_INDEX_NAME, "JENKINS_JOBS",start, end, logger)
         elapsed_time = default_timer() - start_time
         logger.warning(f"get jenkins_job took {elapsed_time} seconds")
         logger.warning(f"jenkins_jobs found between {start} and {end}: = {jenkins_jobs}")
-
+        
         start_time = default_timer()
         codebashing_jobs  = get_job_names(sourceES,CODEBASHING_INDEX_NAME, "JENKINS_JOBS",start, end, logger)
         elapsed_time = default_timer() - start_time
         logger.warning(f"get codebashing_jobs took {elapsed_time} seconds")
         logger.warning(f"codebashing_jobs found between {start} and {end}: = {codebashing_jobs}")
-
+        
+        start_time = default_timer()
+        iast_jobs          = get_job_names(sourceES,IAST_INDEX_NAME, "JENKINS_JOBS",start, end, logger)
+        elapsed_time = default_timer() - start_time
+        logger.warning(f"get iast_jobs took {elapsed_time} seconds")
+        logger.warning(f"iast_jobs found between {start} and {end}: = {iast_jobs}")
+        
         start_time = default_timer()
         sca_jobs          = get_job_names(sourceES,SCA_INDEX_NAME, "JENKINS_JOBS",start, end, logger)
         elapsed_time = default_timer() - start_time
@@ -246,12 +252,11 @@ def get_all_jobs(sourceES, start,end, logger):
         elapsed_time = default_timer() - start_time
         logger.warning(f"get circleci_jobs took {elapsed_time} seconds")
         logger.warning(f"circleci_jobs found between {start} and {end}: = {circleci_jobs}")
-
+        
         #tfs_jobs          = get_job_names(sourceES,TFS_INDEX_NAME, "TFS_JOBS",start, end, logger)        
         #frames = [jenkins_jobs, codebashing_jobs, sca_jobs, circleci_jobs, tfs_jobs]
 
-        frames = [jenkins_jobs, codebashing_jobs, sca_jobs, circleci_jobs]
-        
+        frames = [jenkins_jobs, codebashing_jobs, sca_jobs, circleci_jobs, iast_jobs]
         
         all_jobs = pd.concat(frames)
 
@@ -267,6 +272,7 @@ def get_job_names(sourceES, index_name, query, start, end, logger):
         df = pd.DataFrame(columns=["job_name"])        
         jobs_query = globals()[query]
         jobs_query = jobs_query.replace('{0}',start.strftime("%Y-%m-%d")).replace('{1}',end.strftime("%Y-%m-%d"))
+        logger.warning(jobs_query)
         res = sourceES.search(index=index_name, body=jobs_query, size = 1000)
 
         for hit in (res["hits"]["hits"]): 
@@ -343,12 +349,20 @@ def get_population(sourceES, index_name, start, job_name, query, logger):
                 new_row = {"job_name":  hit['_source']['definition']['name'],
                            "timestamp": hit['_source']['startTime'],
                            "result":    status }
+            elif (index_name == CODEBASHING_INDEX_NAME):
+                status = hit['_source']['data']['result']
+                if status == "UNSTABLE":
+                    status = "FAILURE"
+                new_row = {"job_name":  hit['_source']['data']['buildVariables']['JOB_NAME'],
+                           "timestamp": hit['_source']['@timestamp'],
+                           "result":    status }
             else:        
                 new_row = {"job_name":  hit['_source']['data']['buildVariables']['JOB_NAME'],
                            "timestamp": hit['_source']['@timestamp'],
                            "result":    hit['_source']['data']['result'] }
             df = df.append(new_row, ignore_index=True)
     except Exception:
+        logger.exception(f"exception in get_population {sys.exc_info()[0]}")
         pass
         
     return df
@@ -667,10 +681,10 @@ def main():
     sourceES = targetES
 
     # force re-calculate the last day 
-    create_force = False
+    create_force = True
     
     # force re-calculate the last 30 days 
-    create_force_history = False
+    create_force_history = True
 
     logger.warning(f'create_force = {create_force}, create_force_history = {create_force_history}')
 
