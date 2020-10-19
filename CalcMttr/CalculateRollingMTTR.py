@@ -681,10 +681,10 @@ def main():
     sourceES = targetES
 
     # force re-calculate the last day 
-    create_force = True
+    create_force = False
     
     # force re-calculate the last 30 days 
-    create_force_history = True
+    create_force_history = False
 
     logger.warning(f'create_force = {create_force}, create_force_history = {create_force_history}')
 
