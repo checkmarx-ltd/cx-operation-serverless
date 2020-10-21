@@ -1,14 +1,21 @@
+import sys
+import os
+
+subprocess.call('pip3 install cryptography -t /tmp/ --no-cache-dir'.split(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+subprocess.call('pip3 install pandas -t /tmp/ --no-cache-dir'.split(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+subprocess.call('pip3 install elasticsearch -t /tmp/ --no-cache-dir'.split(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+subprocess.call('pip3 install elasticsearch-dbapi -t /tmp/ --no-cache-dir'.split(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+subprocess.call('pip install python-dotenv -t /tmp/ --no-cache-dir'.split(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 import  CalculateRollingMTTR   # The code to test
 import logging
 from logging import Logger
 import unittest   # The test framework
 import pandas as pd
 import numpy as np
-import sys
+
 from elasticsearch import Elasticsearch
 from datetime import datetime, timedelta,date, time
 from dotenv import load_dotenv
-import os
 import sqlite3
 from sqlalchemy import create_engine
 
