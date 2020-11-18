@@ -223,20 +223,24 @@ def get_all_jobs(sourceES, start,end, logger):
     all_jobs = None
 
     try:
+        
         start_time = default_timer()                     
         jenkins_jobs      = get_job_names(sourceES,LOGSTASH_INDEX_NAME, "JENKINS_JOBS",start, end, logger)
+        jenkins_jobs = jenkins_jobs[jenkins_jobs["job_name"] == "Smoke-Dynamic-CI"]            
         elapsed_time = default_timer() - start_time
         logger.warning(f"get jenkins_job took {elapsed_time} seconds")
         logger.warning(f"jenkins_jobs found between {start} and {end}: = {jenkins_jobs}")
         
         start_time = default_timer()
         codebashing_jobs  = get_job_names(sourceES,CODEBASHING_INDEX_NAME, "JENKINS_JOBS",start, end, logger)
+        codebashing_jobs = codebashing_jobs[codebashing_jobs["job_name"] == "BackEnd/cb-platform/staging"]    
         elapsed_time = default_timer() - start_time
         logger.warning(f"get codebashing_jobs took {elapsed_time} seconds")
         logger.warning(f"codebashing_jobs found between {start} and {end}: = {codebashing_jobs}")
         
         start_time = default_timer()
-        iast_jobs          = get_job_names(sourceES,IAST_INDEX_NAME, "JENKINS_JOBS",start, end, logger)
+        iast_jobs          = get_job_names(sourceES,IAST_INDEX_NAME, "JENKINS_JOBS",start, end, logger) 
+        iast_jobs = iast_jobs[iast_jobs["job_name"] == "iast-components"] 
         elapsed_time = default_timer() - start_time
         logger.warning(f"get iast_jobs took {elapsed_time} seconds")
         logger.warning(f"iast_jobs found between {start} and {end}: = {iast_jobs}")
@@ -249,6 +253,7 @@ def get_all_jobs(sourceES, start,end, logger):
         
         start_time = default_timer()
         circleci_jobs     = get_job_names(sourceES,CIRCLECI_INDEX_NAME, "CIRCLECI_JOBS",start, end, logger)
+        #cdcircleci_jobs = circleci_jobs[circleci_jobs["job_name"] == "gh/checkmarx-ltd/cx-flow"]         
         elapsed_time = default_timer() - start_time
         logger.warning(f"get circleci_jobs took {elapsed_time} seconds")
         logger.warning(f"circleci_jobs found between {start} and {end}: = {circleci_jobs}")
@@ -257,7 +262,7 @@ def get_all_jobs(sourceES, start,end, logger):
         #frames = [jenkins_jobs, codebashing_jobs, sca_jobs, circleci_jobs, tfs_jobs]
 
         frames = [jenkins_jobs, codebashing_jobs, sca_jobs, circleci_jobs, iast_jobs]
-        
+        #frames = [codebashing_jobs]
         all_jobs = pd.concat(frames)
 
         return all_jobs
@@ -435,7 +440,7 @@ def create_raw_dataframe(data, logger):
         logger.exception(f"Exception occurred in create_raw_dataframe. raw dataframe = {df_a}")
         raise
 
-def create_grouped_dataframe(raw_df,date):
+def create_grouped_dataframe(raw_df,date, logger):
 
     # Look at the example from create_raw_dataframe
     # the records will be grouped to (third row eliminatd)
@@ -444,42 +449,48 @@ def create_grouped_dataframe(raw_df,date):
     #         FAILURE 2     '2020-03-03 04:00'  '2020-01-01 01:00'          '2020-03-03'
     #         SUCCESS 3     '2020-07-07 02:00' ' 2020-05-05 05:00'          '2020-07-07'
  
-    
-    grouped = raw_df.groupby(['job_name','rank','result']).agg(
-    start_timestamp = ('timestamp',np.min),
-    timestamp_begin_of_day = ('timestamp_begin_of_day',np.min)
-    )
+    try:
+        grouped = raw_df.groupby(['job_name','rank','result']).agg(
+        start_timestamp = ('timestamp',np.min),
+        timestamp_begin_of_day = ('timestamp_begin_of_day',np.min)
+        )
 
-    if grouped.empty:
+        if grouped.empty:
+
+            return grouped
+
+        grouped = grouped.reset_index()
+        grouped['timestamp_lag'] = (grouped.sort_values(by=['start_timestamp'], ascending=True)
+            .groupby(['job_name'])['start_timestamp'].shift(1,fill_value='1970-01-01T00:00:00.000Z'))
+
+        grouped['result_lag'] = (grouped.sort_values(by=['start_timestamp'], ascending=True)
+            .groupby(['job_name'])['result'].shift(1,fill_value='SUCCESS'))
+
+        grouped = grouped[np.logical_and(grouped.result == "SUCCESS",grouped.result_lag=='FAILURE')]
+        grouped['total_time'] = ((pd.to_datetime(grouped['start_timestamp'])-pd.to_datetime(grouped['timestamp_lag'])).dt.total_seconds())/60
+        grouped['incidents'] = 1
+
+        # e.g.    result  rank  timestamp           timestamp_lagged            begin_of_day    result_lagged   incidents    total_time
+        #         SUCCESS 1     '2020-01-01 01:00'  '2019-12-12 02:00'          '2020-01-01'    SUCCESS         1            '2020-01-01 01:00'-'2019-12-12 02:00'
+        #         FAILURE 2     '2020-03-03 04:00'  '2020-01-01 01:00'          '2020-03-03'    SUCCESS         1            '2020-03-03 04:00'-'2020-01-01 01:00'
+        #         SUCCESS 3     '2020-07-07 02:00'  '2020-05-05 05:00'          '2020-07-07'    FAILURE         1            '2020-07-07 02:00'-'2020-05-05 05:00'
+
+        grouped = grouped.groupby(['job_name','result_lag','timestamp_begin_of_day']).agg(
+            recovery_time = ('total_time',np.sum),
+            incidents = ('incidents',np.sum)
+        )
+
+        grouped = grouped.reset_index()
+        grouped.rename(columns = {"result_lag": "result","timestamp_begin_of_day": "timestamp"}, inplace=True)
+        grouped = grouped[grouped.timestamp == str(date)]
 
         return grouped
 
-    grouped = grouped.reset_index()
-    grouped['timestamp_lag'] = (grouped.sort_values(by=['start_timestamp'], ascending=True)
-        .groupby(['job_name'])['start_timestamp'].shift(1,fill_value='1970-01-01T00:00:00.000Z'))
+    except Exception:
+        logger.exception(f"Exception occurred in create_grouped_dataframe.")
+        return pd.DataFrame
+     
 
-    grouped['result_lag'] = (grouped.sort_values(by=['start_timestamp'], ascending=True)
-        .groupby(['job_name'])['result'].shift(1,fill_value='SUCCESS'))
-
-    grouped = grouped[np.logical_and(grouped.result == "SUCCESS",grouped.result_lag=='FAILURE')]
-    grouped['total_time'] = ((pd.to_datetime(grouped['start_timestamp'])-pd.to_datetime(grouped['timestamp_lag'])).dt.total_seconds())/60
-    grouped['incidents'] = 1
-
-    # e.g.    result  rank  timestamp           timestamp_lagged            begin_of_day    result_lagged   incidents    total_time
-    #         SUCCESS 1     '2020-01-01 01:00'  '2019-12-12 02:00'          '2020-01-01'    SUCCESS         1            '2020-01-01 01:00'-'2019-12-12 02:00'
-    #         FAILURE 2     '2020-03-03 04:00'  '2020-01-01 01:00'          '2020-03-03'    SUCCESS         1            '2020-03-03 04:00'-'2020-01-01 01:00'
-    #         SUCCESS 3     '2020-07-07 02:00'  '2020-05-05 05:00'          '2020-07-07'    FAILURE         1            '2020-07-07 02:00'-'2020-05-05 05:00'
-
-    grouped = grouped.groupby(['job_name','result_lag','timestamp_begin_of_day']).agg(
-        recovery_time = ('total_time',np.sum),
-        incidents = ('incidents',np.sum)
-    )
-
-    grouped = grouped.reset_index()
-    grouped.rename(columns = {"result_lag": "result","timestamp_begin_of_day": "timestamp"}, inplace=True)
-    grouped = grouped[grouped.timestamp == str(date)]
-
-    return grouped
 
     
 
@@ -644,7 +655,7 @@ def calculate_mttr_job(sourceES, targetES, job_name, source_index_name, query, s
                 logger.warning(population)
             
             if not raw_df.empty:                   
-                grouped_df = create_grouped_dataframe(raw_df,start)  
+                grouped_df = create_grouped_dataframe(raw_df,start, logger)  
                 logger.warning(f"raw_df for job_name {job_name} on {str(start)}")
                 logger.warning(raw_df)           
 
@@ -774,10 +785,13 @@ def main():
         if is_index_exists(targetES, target_index_name, logger):
             logger.warning(f'index {target_index_name} already exists, no need to create it......')
         else:
-            df = df_mttr_rolling[pd.to_datetime(df_mttr_rolling.timestamp) == str(start)]           
-            documents = df.to_dict(orient='records')
-            # create the index even if its stays empty so spend time repeating the same calculation the next day
-            create_index(targetES, target_index_name) 
+            try:
+                df = df_mttr_rolling[pd.to_datetime(df_mttr_rolling.timestamp) == str(start)]           
+                documents = df.to_dict(orient='records')
+                # create the index even if its stays empty so spend time repeating the same calculation the next day
+                create_index(targetES, target_index_name) 
+            except Exception:
+                pass
 
             if len(documents) > 0:
 
