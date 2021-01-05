@@ -251,6 +251,16 @@ def using_boto3():
 
 def main():
 
+
+    #dt = datetime.datetime.now()
+    date_time_str = '2020-09-01'
+
+    
+    seq = int(datetime.datetime.strptime(date_time_str, '%Y-%m-%d').strftime("%Y%m%d%H%M%S"))
+
+    print(seq)
+    return
+
     client = boto3.client('ce')
     '''
     response = client.get_cost_and_usage(

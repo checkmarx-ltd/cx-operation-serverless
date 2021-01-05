@@ -28,18 +28,51 @@ class DbService:
 
     def ec2_bulk_insert_elastic(self, ec2):
 
-        targetES = Elasticsearch("https://elastic:kJ12iC0bfTVXo3qhpJqRLs87@c11f5bc9787c4c268d3b960ad866adc2.eu-central-1.aws.cloud.es.io:9243")
+        ElasticConnectionString = os.getenv("ELASTIC_CONNECTIONSTRING")        
+        targetES = Elasticsearch(ElasticConnectionString)
 
         now = datetime.datetime.now()
         target_index_name = "ec2-billing-" + now.strftime("%m-%Y")
 
-        df = pandas.DataFrame(columns=["start_time","cpu_utilization","network_in","network_out", "network_packets_in","network_packets_out", \
+        request_body = {
+        "settings" : {
+            "number_of_shards": 5,
+            "number_of_replicas": 1
+        },
+        'mappings': {            
+            'properties': {                
+                'start_time': {'format': 'dateOptionalTime', 'type': 'date'},
+                'cpu_utilization': {'type': 'float'},
+                'network_in': {'type': 'float'},
+                'network_out': {'type': 'float'},
+                'network_packets_in': {'type': 'float'},
+                'network_packets_out': {'type': 'float'},
+                'disk_write_ops': {'type': 'float'},
+                'disk_read_ops': {'type': 'float'},
+                'disk_write_bytes': {'type': 'float'},
+                'disk_read_bytes': {'type': 'float'},
+                'is_idle': {'type': 'short'},
+                'availability_zone': {'type': 'keyword'},
+                'instance_id': {'type': 'keyword'},
+                'instance_type': {'type': 'keyword'},                
+                'launch_time': {'format': 'dateOptionalTime', 'type': 'date'},                        
+                'state': {'type': 'keyword'},
+                'ebs_optimized': {'type': 'keyword'},
+                'tags': {'type': 'keyword'},
+                'instance_owner_id': {'type': 'keyword'},                
+            }}
+        }
+        
+        #targetES.indices.delete(index=target_index_name, ignore=[400, 404])
+        targetES.indices.create(index = target_index_name, body = request_body, ignore=[400, 404])
+
+        df = pandas.DataFrame(columns=["_id","start_time","cpu_utilization","network_in","network_out", "network_packets_in","network_packets_out", \
                 "disk_write_ops","disk_read_ops","disk_write_bytes","disk_read_bytes", "is_idle","availability_zone","instance_id","instance_type", \
                      "launch_time", "state", "ebs_optimized", "tags", "instance_owner_id" ])      
 
         for performance_counters in ec2.performance_counters_list:
-            
-            new_row = {"start_time": performance_counters.start_time, "cpu_utilization":performance_counters.cpu_utilization, \
+                       
+            new_row = {"_id": ec2.instance_id + "-" + performance_counters.start_time.strftime("%Y%m%d%H%M%S") ,"start_time": performance_counters.start_time, "cpu_utilization":performance_counters.cpu_utilization, \
                 "network_in":performance_counters.network_in, \
                 "network_out": performance_counters.network_out, "network_packets_in":performance_counters.network_packets_in, \
                 "network_packets_out":performance_counters.network_packets_out, "disk_write_ops": performance_counters.disk_write_ops, \
@@ -63,14 +96,12 @@ class DbService:
 
         ElasticConnectionString = os.getenv("ELASTIC_CONNECTIONSTRING")
         
-        #targetES = Elasticsearch("https://elastic:kJ12iC0bfTVXo3qhpJqRLs87@c11f5bc9787c4c268d3b960ad866adc2.eu-central-1.aws.cloud.es.io:9243")
-
         targetES = Elasticsearch(ElasticConnectionString)
 
         now = datetime.datetime.now()
         target_index_name = "account-billing-" + now.strftime("%m-%Y")
 
-        targetES.indices.delete(index=target_index_name, ignore=[400, 404])
+        #targetES.indices.delete(index=target_index_name, ignore=[400, 404])
 
         request_body = {
         "settings" : {
@@ -78,9 +109,9 @@ class DbService:
             "number_of_replicas": 1
         },
         'mappings': {            
-            'properties': {
+            'properties': {                
                 'account': {'type': 'keyword'},
-                'keys': {'type': 'keyword'},
+                'keys': {'type': 'text'},
                 'amount': {'type': 'float'},
                 'start_time': {'format': 'dateOptionalTime', 'type': 'date'},
                 'end_time': {'format': 'dateOptionalTime', 'type': 'date'},                        
@@ -88,14 +119,13 @@ class DbService:
             }}
         }
         
-        targetES.indices.create(index = target_index_name, body = request_body)
+        targetES.indices.create(index = target_index_name, body = request_body, ignore=[400, 404])
 
-
-        df = pandas.DataFrame(columns=["account","keys","amount","start_time","end_time","metrics"])
+        df = pandas.DataFrame(columns=["_id","account","keys","amount","start_time","end_time","metrics"])
 
         for account in account_list:
 
-            new_row = {"account":account.account_number,"keys":account.keys,\
+            new_row = {"_id": account.account_number + "-" + account.keys + "-" + datetime.datetime.strptime(account.start, '%Y-%m-%d').strftime("%Y%m%d%H%M%S"), "account":account.account_number,"keys":account.keys,\
                 "amount":account.amount,"start_time":account.start,"end_time":account.end,\
                     "metrics":account.metrics}
             
@@ -109,7 +139,7 @@ class DbService:
             print(e)
             raise
        
-
+    
     def create_account(self, account_number, response):
 
         account_list = []
@@ -128,7 +158,7 @@ class DbService:
                 account_list.append(account)
 
         return account_list
-            
+           
 
     def create_performance_counters_list(self, df_merged, metric_list):
 
