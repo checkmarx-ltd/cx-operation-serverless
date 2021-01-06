@@ -10,7 +10,7 @@ import elasticsearch.helpers as helpers
 import datetime 
 import os
 
-pandas.set_option('display.max_rows', 500)
+pandas.set_option('display.max_rows', 5000)
 pandas.set_option('display.max_columns', 500)
 pandas.set_option('display.width', 1000)
 
@@ -148,9 +148,11 @@ class DbService:
             start = row['TimePeriod']['Start']
             end = row['TimePeriod']['End']
             for group in row['Groups']:
+                #keys = service
                 keys = group['Keys'][0]
                 amount = group['Metrics']['AmortizedCost']['Amount']
                 key_list = list(group['Metrics'].keys())
+                #metrics = 'AmortizedCost'
                 metrics = key_list[0]
 
                 account = Account(account_number = account_number, keys = keys, amount = amount, start = start, end = end, metrics = metrics)

@@ -107,6 +107,8 @@ functions:
 #    Define function environment variables here
     environment:
       ELASTIC_CONNECTIONSTRING: "https://elastic:kJ12iC0bfTVXo3qhpJqRLs87@c11f5bc9787c4c268d3b960ad866adc2.eu-central-1.aws.cloud.es.io:9243"
+      EC2_WASTE_DETECTION_LAST_UPDATE: "2020-11-01"
+      ACCOUNTS_VISIBILITY_LAST_UPDATE: "2020-11-01"
 
 # you can add CloudFormation resource templates here
 #resources:

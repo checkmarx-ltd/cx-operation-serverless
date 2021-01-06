@@ -15,7 +15,7 @@ import traceback
 import threading
 from elasticsearch import Elasticsearch
 import elasticsearch.helpers as helpers
-
+from dateutil.relativedelta import *
 
 import datetime 
 from datetime import date
@@ -251,15 +251,47 @@ def using_boto3():
 
 def main():
 
+    given_date = '2020-05-05'
 
-    #dt = datetime.datetime.now()
-    date_time_str = '2020-09-01'
+    date_time_obj = datetime.datetime.strptime(given_date, '%Y-%m-%d')
+
+    first_day_of_month = date_time_obj.replace(day=1)
+
+    next_month = first_day_of_month + relativedelta(months=+1)
+
+    first_day_of_month_str = first_day_of_month.strftime('%Y-%m-%d')
+
+    print(first_day_of_month)
+    print(first_day_of_month_str)
+    print(next_month)
+    return
+
+    client = boto3.client('sts')
+
+    response = client.get_caller_identity()
+
+    print(response['Account'])
+
+    return
+
+    client = boto3.client('lambda')
+
+    response = client.update_function_configuration(
+    FunctionName='billingoptimizations-prod-calcBillingOptimizations',
+	Environment={
+        'Variables': {
+            'TEST': '11111'
+        }
+    },
+    )
 
     
-    seq = int(datetime.datetime.strptime(date_time_str, '%Y-%m-%d').strftime("%Y%m%d%H%M%S"))
+    response = client.get_function_configuration(FunctionName='Cx-CircleCi-Pipeliene-Status-Shipper')
 
-    print(seq)
+    print(response)
     return
+    
+   
 
     client = boto3.client('ce')
     '''
@@ -283,19 +315,23 @@ def main():
 
     response = client.get_cost_forecast(
         TimePeriod={
-            'Start': '2021-01-01',
-            'End': '2021-04-01'
-        },
-        Granularity='MONTHLY',
+            'Start': '2021-01-05',
+            'End': '2021-01-06'
+        },        
         Metric='AMORTIZED_COST',
+        Granularity='DAILY',
+        PredictionIntervalLevel=80,
+       
+    )
+
+    '''
         Filter = {      
             "Dimensions": {
             "Key": "SERVICE",
             "Values": ["AWS CloudTrail","EC2 - Other"]
             }
         }
-          
-    )
+    '''
 
     pprint.pprint(response)
 
@@ -379,9 +415,7 @@ def main():
        
     return 
 
-    client = boto3.client('lambda')
-
-    response = client.get_function_configuration(FunctionName='Cx-CircleCi-Pipeliene-Status-Shipper')
+   
 
     #print(response['Environment']['Variables'])
 

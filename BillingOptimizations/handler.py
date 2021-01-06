@@ -1,6 +1,7 @@
-import json, sys
+import json, sys, os
 import subprocess
 import threading
+import boto3
 
 subprocess.call('pip3 install pandas -t /tmp/ --no-cache-dir'.split(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 subprocess.call('pip3 install elasticsearch -t /tmp/ --no-cache-dir'.split(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -29,7 +30,6 @@ def collect_ec2_utilization(ec2, metric_list):
         period = 3600
         start_time = '2020-12-06T00:00:00'
         end_time = '2020-12-07T00:00:00'
-        #region = ec2.region
                                             
         df = aws_service.get_aws_metric_statistics(ec2, metric_name, period, start_time, end_time, namespace, statistics)               
         
@@ -79,12 +79,11 @@ def collect_ec2_all():
     except Exception as e:
         print(e)
 
-def collect_accounts_cost():
+def collect_accounts_cost(account_number, accounts_visibility_last_update):
 
     aws_service = AwsService() 
     db_service = DbService()
-
-    account_number = "656509302511"
+    
 
     start = '2020-06-01'
     end = '2020-12-01'
@@ -92,17 +91,24 @@ def collect_accounts_cost():
     metrics = 'AMORTIZED_COST'
     groupby = 'SERVICE'
 
+    # get cost per account on the last month
     response = aws_service.get_aws_cost_and_usage(account_number, start, end, granularity, metrics, groupby)
 
+    #create objects to hold the accounts data
     account_list = db_service.create_account(account_number, response)
+
+    #insert accounts to elastic
     db_service.account_bulk_insert_elastic(account_list)
 
     
-
 def calcBillingOptimizations(event, context):
 
-    collect_accounts_cost()
-    collect_ec2_all()
+    client = boto3.client('sts')
+    response = client.get_caller_identity()
+    account_number = str(response['Account'])
+
+    collect_accounts_cost(account_number, os.environ.get('ACCOUNTS_VISIBILITY_LAST_UPDATE'))
+    collect_ec2_all(account_number, os.environ.get('EC2_WASTE_DETECTION_LAST_UPDATE'))
    
      
     body = {'message':'Go Serverless v1.0! Your function executed successfully!',  'input':event}
