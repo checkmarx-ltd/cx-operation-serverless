@@ -9,6 +9,7 @@ from elasticsearch import Elasticsearch
 import elasticsearch.helpers as helpers
 import datetime 
 import os
+from decimal import Decimal
 
 pandas.set_option('display.max_rows', 5000)
 pandas.set_option('display.max_columns', 500)
@@ -22,9 +23,6 @@ class DbService:
         df_merged = reduce(lambda  left,right: pandas.merge(left,right,on=['start_time'], how='outer'), frames)  
         return df_merged  
 
-    
-    def account_bulk_insert_elastic(self, account):
-        pass
 
     def ec2_bulk_insert_elastic(self, ec2):
 
@@ -59,16 +57,16 @@ class DbService:
                 'state': {'type': 'keyword'},
                 'ebs_optimized': {'type': 'keyword'},
                 'tags': {'type': 'keyword'},
-                'instance_owner_id': {'type': 'keyword'},                
+                'account_number': {'type': 'keyword'},                
             }}
         }
         
-        #targetES.indices.delete(index=target_index_name, ignore=[400, 404])
+        targetES.indices.delete(index=target_index_name, ignore=[400, 404])
         targetES.indices.create(index = target_index_name, body = request_body, ignore=[400, 404])
 
         df = pandas.DataFrame(columns=["_id","start_time","cpu_utilization","network_in","network_out", "network_packets_in","network_packets_out", \
                 "disk_write_ops","disk_read_ops","disk_write_bytes","disk_read_bytes", "is_idle","availability_zone","instance_id","instance_type", \
-                     "launch_time", "state", "ebs_optimized", "tags", "instance_owner_id" ])      
+                     "launch_time", "state", "ebs_optimized", "tags", "account_number" ])      
 
         for performance_counters in ec2.performance_counters_list:
                        
@@ -80,7 +78,7 @@ class DbService:
                         "disk_write_bytes": performance_counters.disk_write_bytes, "disk_read_bytes":performance_counters.disk_read_bytes, \
                            "is_idle": performance_counters.is_idle, "availability_zone": ec2.availability_zone, "instance_id":ec2.instance_id, \
                                "instance_type":ec2.instance_type, "launch_time":ec2.launch_time, \
-                                   "state": ec2.state, "ebs_optimized":ec2.ebs_optimized, "tags":ec2.tags , "instance_owner_id": ec2.instance_owner_id}
+                                   "state": ec2.state, "ebs_optimized":ec2.ebs_optimized, "tags":ec2.tags , "account_number": ec2.instance_owner_id}
             
             df = df.append(new_row, ignore_index=True)
            
@@ -101,7 +99,7 @@ class DbService:
         now = datetime.datetime.now()
         target_index_name = "account-billing-" + now.strftime("%m-%Y")
 
-        #targetES.indices.delete(index=target_index_name, ignore=[400, 404])
+        targetES.indices.delete(index=target_index_name, ignore=[400, 404])
 
         request_body = {
         "settings" : {
@@ -116,18 +114,23 @@ class DbService:
                 'start_time': {'format': 'dateOptionalTime', 'type': 'date'},
                 'end_time': {'format': 'dateOptionalTime', 'type': 'date'},                        
                 'metrics': {'type': 'keyword'},
+                'forecast_mean_value': {'type': 'float'},
+                'forecast_prediction_interval_lowerbound': {'type': 'float'},
+                'forecast_prediction_interval_upperbound': {'type': 'float'},
             }}
         }
         
         targetES.indices.create(index = target_index_name, body = request_body, ignore=[400, 404])
 
-        df = pandas.DataFrame(columns=["_id","account","keys","amount","start_time","end_time","metrics"])
+        df = pandas.DataFrame(columns=["_id","account","keys","amount","start_time","end_time","metrics","forecast_mean_value","forecast_prediction_interval_lowerbound","forecast_prediction_interval_upperbound"])
 
         for account in account_list:
 
             new_row = {"_id": account.account_number + "-" + account.keys + "-" + datetime.datetime.strptime(account.start, '%Y-%m-%d').strftime("%Y%m%d%H%M%S"), "account":account.account_number,"keys":account.keys,\
                 "amount":account.amount,"start_time":account.start,"end_time":account.end,\
-                    "metrics":account.metrics}
+                    "metrics":account.metrics, "forecast_mean_value": account.forecast_mean_value, \
+                        "forecast_prediction_interval_lowerbound": account.forecast_prediction_interval_lowerbound, \
+                            "forecast_prediction_interval_upperbound": account.forecast_prediction_interval_upperbound}
             
             df = df.append(new_row, ignore_index=True)
         
@@ -138,6 +141,11 @@ class DbService:
         except Exception as e:
             print(e)
             raise
+
+    def print_account_list(self, account_list):
+
+        for account in account_list:
+            print(f"account_number = {account.account_number}, start = {account.start}, end = {account.end}, metrics = {account.metrics}, keys = {account.keys}, amount = {account.amount}, forecast = {account.forecast_mean_value}, interval_lowerbound = {account.forecast_prediction_interval_lowerbound}, interval_upperbound = {account.forecast_prediction_interval_upperbound}")
        
     
     def create_account(self, account_number, response):
@@ -150,7 +158,7 @@ class DbService:
             for group in row['Groups']:
                 #keys = service
                 keys = group['Keys'][0]
-                amount = group['Metrics']['AmortizedCost']['Amount']
+                amount = round(Decimal(group['Metrics']['AmortizedCost']['Amount']),2)
                 key_list = list(group['Metrics'].keys())
                 #metrics = 'AmortizedCost'
                 metrics = key_list[0]
@@ -169,7 +177,6 @@ class DbService:
         for index, row in df_merged.iterrows():
             
             start_time = row['start_time'] 
-
             cpu_utilization = row['CPUUtilization'] if 'CPUUtilization' in metric_list else ''
             network_in = row['NetworkIn'] if 'NetworkIn' in metric_list else ''
             network_out = row['NetworkOut'] if 'NetworkOut' in metric_list else ''      

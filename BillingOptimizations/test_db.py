@@ -251,6 +251,43 @@ def using_boto3():
 
 def main():
 
+    client = boto3.client('ce')
+    '''
+    response = client.get_cost_and_usage(
+        TimePeriod={
+            'Start': '2021-01-02',
+            'End': '2021-01-02'
+        },
+        Granularity='DAILY',
+        Metrics=['AMORTIZED_COST'],
+        GroupBy=[
+        {
+            'Type': 'DIMENSION',
+            'Key': 'SERVICE'
+        }]
+    )
+
+    pprint.pprint(response)
+    return
+    '''
+
+    response = client.get_cost_forecast(
+        TimePeriod={
+            'Start': '2021-01-06',
+            'End': '2021-02-01'
+        },        
+        Metric='AMORTIZED_COST',
+        Granularity='MONTHLY',
+        PredictionIntervalLevel=80,
+       
+    )
+
+    print(response['ForecastResultsByTime'][0]['MeanValue'])
+    print(response['ForecastResultsByTime'][0]['PredictionIntervalLowerBound'])
+    print(response['ForecastResultsByTime'][0]['PredictionIntervalUpperBound'])
+
+    return
+
     given_date = '2020-05-05'
 
     date_time_obj = datetime.datetime.strptime(given_date, '%Y-%m-%d')

@@ -9,4 +9,6 @@ class Account:
         self.start = start
         self.end = end
         self.metrics = metrics
-        
+        self.forecast_mean_value = 0
+        self.forecast_prediction_interval_lowerbound = 0    
+        self.forecast_prediction_interval_upperbound = 0    

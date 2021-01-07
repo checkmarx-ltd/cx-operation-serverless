@@ -36,6 +36,8 @@ provider:
         - "ec2:Start*"
         - "ec2:Stop*"
         - "ec2:Describe*"
+        - "ce:*"
+        - "lambda:*"
       Resource: "*"
 #    - Effect: "Allow"
 #      Action:
@@ -68,6 +70,7 @@ package:
 functions:
   calcBillingOptimizations:
     handler: handler.calcBillingOptimizations
+    timeout: 900
 #    The following are a few example events you can configure
 #    NOTE: Please make sure to change your handler code to work with those events
 #    Check the event documentation for details
@@ -107,8 +110,8 @@ functions:
 #    Define function environment variables here
     environment:
       ELASTIC_CONNECTIONSTRING: "https://elastic:kJ12iC0bfTVXo3qhpJqRLs87@c11f5bc9787c4c268d3b960ad866adc2.eu-central-1.aws.cloud.es.io:9243"
-      EC2_WASTE_DETECTION_LAST_UPDATE: "2020-11-01"
-      ACCOUNTS_VISIBILITY_LAST_UPDATE: "2020-11-01"
+      EC2_WASTE_DETECTION_LAST_UPDATE: "2021-01-05"
+      ACCOUNTS_VISIBILITY_LAST_UPDATE: "2021-01-05"      
 
 # you can add CloudFormation resource templates here
 #resources:

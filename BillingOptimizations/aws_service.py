@@ -5,8 +5,41 @@ from thresholds import Thresholds
 import pandas
 import numpy as np
 
-
 class AwsService: 
+
+    def get_aws_cost_forecast(self, account_number, start, end, granularity, metrics, groupby):
+        
+        response = ""
+
+        client = boto3.client('ce')
+        
+        #print(f" About to calculate forecast: start = {start}, end = {end}, granularity = {granularity}, metrics = {metrics}, groupby = {groupby}.")
+
+        try:
+            response = response = client.get_cost_forecast(
+                TimePeriod={
+                'Start': start,
+                'End': end
+                },
+                Granularity=granularity,
+                Metric=metrics,            
+                Filter={      
+                    "Dimensions": {
+                    "Key": "SERVICE",
+                    "Values": [
+                        groupby
+                    ]
+                    }
+                },
+                PredictionIntervalLevel=80,
+            )
+        except Exception as e:
+            if type(Exception) == "botocore.errorfactory.DataUnavailableException":
+                pass
+                return
+
+        return response
+
 
     def get_aws_cost_and_usage(self, account_number, start, end, granularity, metrics, groupby):
         
