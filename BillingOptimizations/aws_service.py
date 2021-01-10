@@ -67,9 +67,21 @@ class AwsService:
         session = boto3.Session()
         ec2 = session.resource('ec2')
         instances = ec2.instances.filter()
+
+        
         for instance in instances:
-            ec2 = EC2(instance.placement["AvailabilityZone"], instance.id, instance.instance_type, instance.launch_time, instance.state['Name'],  instance.ebs_optimized, instance.tags[0]['Value'], instance.network_interfaces_attribute[0]['OwnerId'])
-            ec2_list.append(ec2)
+            availability_zone = instance.placement["AvailabilityZone"]           
+            state = instance.state['Name']
+            tags = instance.tags[0]['Value']
+            try:
+                owner_id = instance.network_interfaces_attribute[0]['OwnerId']
+            except Exception as e:
+                pass
+
+            if state == "running":
+           
+                ec2 = EC2(availability_zone, instance.id, instance.instance_type, instance.launch_time, state,  instance.ebs_optimized, tags, owner_id)
+                ec2_list.append(ec2)
 
         return ec2_list    
 

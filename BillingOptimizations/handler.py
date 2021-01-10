@@ -19,15 +19,10 @@ from db_service import DbService
 from performance_counters import PerformanceCounters
 from dotenv import load_dotenv
 
-def collect_ec2_utilization(ec2, metric_list, account_number, ec2_waste_detection_last_update):
+def collect_ec2_utilization(ec2, metric_list, account_number, start_date, end_date):
 
     aws_service = AwsService()    
     db_service = DbService()
-
-    today = datetime.combine(date.today(), datetime.min.time())
-
-    if ec2_waste_detection_last_update == today:
-        return
 
     frames = []   
                 
@@ -36,10 +31,10 @@ def collect_ec2_utilization(ec2, metric_list, account_number, ec2_waste_detectio
         namespace = 'AWS/EC2'
         instance_id = ec2.instance_id
         period = 3600
-        start_time = ec2_waste_detection_last_update
-        end_time = today
+        start_time = start_date
+        end_time = end_date
                                             
-        df = aws_service.get_aws_metric_statistics(ec2, metric_name, period, start_time, end_time, namespace, statistics)               
+        df = aws_service.get_aws_metric_statistics(ec2, metric_name, period, start_time, end_time, namespace, statistics)           
         
         if not df.empty:
             frames.append(df)           
@@ -59,11 +54,11 @@ def collect_ec2_utilization(ec2, metric_list, account_number, ec2_waste_detectio
         
 
     
-def collect_ec2_all(account_number, ec2_waste_detection_last_update):
+def collect_ec2_all(account_number, start_date, end_date):
     try:
         ec2_metric_list = ['CPUUtilization', 'NetworkOut', 'NetworkIn','DiskWriteBytes','DiskReadBytes','NetworkPacketsOut','NetworkPacketsIn','DiskWriteOps','DiskReadOps']            
         ec2_instances = []
-        chunk_size = 10       
+        chunk_size = 10     
         
         aws_service = AwsService()    
 
@@ -74,7 +69,7 @@ def collect_ec2_all(account_number, ec2_waste_detection_last_update):
         for i in range(0,len(ec2_list), chunk_size):
             chunk = ec2_list[i:i+chunk_size]
             for ec2 in chunk:
-                x = threading.Thread(target=collect_ec2_utilization, args=(ec2, ec2_metric_list, account_number, ec2_waste_detection_last_update,))
+                x = threading.Thread(target=collect_ec2_utilization, args=(ec2, ec2_metric_list, account_number, start_date, end_date,))
                 threads.append(x)
                 x.start()
             for index, thread in enumerate(threads):                
@@ -83,7 +78,7 @@ def collect_ec2_all(account_number, ec2_waste_detection_last_update):
             threads = []    
         
         for ec2 in ec2_list:
-            print(f"instance_id: {ec2.instance_id} , owner_id: {ec2.instance_owner_id}, launch_time: {ec2.launch_time}")            
+            print(f"instance_id: {ec2.instance_id} , owner_id: {ec2.instance_owner_id}, launch_time: {ec2.launch_time}")                
                 
     except Exception as e:
         print(e)
@@ -97,7 +92,6 @@ def add_forcase_to_account_list(account_list):
 
         account_end = datetime.strptime(account.end, '%Y-%m-%d')
         today_datetime = datetime.combine(date.today(), datetime.min.time())
-
         
         if account_end != today_datetime:
             print("Cannot calculate forecast on historic data")
@@ -117,39 +111,28 @@ def add_forcase_to_account_list(account_list):
 
         if response != "":
 
-            #print(response)
             account.forecast_mean_value = round(Decimal(response['ForecastResultsByTime'][0]['MeanValue']),2)
             account.forecast_prediction_interval_lowerbound = round(Decimal(response['ForecastResultsByTime'][0]['PredictionIntervalLowerBound']),2)
             account.forecast_prediction_interval_upperbound = round(Decimal(response['ForecastResultsByTime'][0]['PredictionIntervalUpperBound']),2)
 
     return account_list
 
-def collect_accounts_cost(account_number, accounts_visibility_last_update):
+def collect_accounts_cost(account_number, start_date, end_date):
 
     aws_service = AwsService() 
     db_service = DbService()
 
-    today = datetime.combine(date.today(), datetime.min.time())
-
     # in ordder to manipulate dates (compare, add ...), we must convert to datetime
-    accounts_visibility_last_update_datetime = datetime.strptime(accounts_visibility_last_update, '%Y-%m-%d')
-    
-    if accounts_visibility_last_update_datetime >= today:
-        print(f"Current function runtime  {accounts_visibility_last_update} must be before  last run {date.today()}. Exit...")
-        return
-    
+    accounts_visibility_last_update_datetime = datetime.strptime(start_date, '%Y-%m-%d') 
 
-    start = accounts_visibility_last_update
-    end = str(date.today())
-
-    print(f"start = {start}, end = {end}")
+    print(f"start = {start_date}, end = {end_date}")
 
     granularity = 'DAILY'
     metrics = 'AMORTIZED_COST'
     groupby = 'SERVICE'
 
     # get cost per account on the last month
-    response = aws_service.get_aws_cost_and_usage(account_number, start, end, granularity, metrics, groupby)
+    response = aws_service.get_aws_cost_and_usage(account_number, start_date, end_date, granularity, metrics, groupby)
 
     #create objects to hold the accounts cost data
     account_list = db_service.create_account(account_number, response)
@@ -159,20 +142,7 @@ def collect_accounts_cost(account_number, accounts_visibility_last_update):
     db_service.print_account_list(account_list)
 
     #insert accounts to elastic
-    db_service.account_bulk_insert_elastic(account_list)
-
-    client = boto3.client('lambda')
-
-    response = client.update_function_configuration(
-    FunctionName='billingoptimizations-prod-calcBillingOptimizations',
-	Environment={
-        'Variables': {
-            'ACCOUNTS_VISIBILITY_LAST_UPDATE': end,
-            'EC2_WASTE_DETECTION_LAST_UPDATE': end,
-            'ELASTIC_CONNECTIONSTRING': "https://elastic:kJ12iC0bfTVXo3qhpJqRLs87@c11f5bc9787c4c268d3b960ad866adc2.eu-central-1.aws.cloud.es.io:9243"
-        }
-    },
-    )
+    db_service.account_bulk_insert_elastic(account_list)    
 
     
 def calcBillingOptimizations(event, context):
@@ -181,10 +151,29 @@ def calcBillingOptimizations(event, context):
     response = client.get_caller_identity()
     account_number = str(response['Account'])
 
-    collect_accounts_cost(account_number, os.environ.get('ACCOUNTS_VISIBILITY_LAST_UPDATE'))
-    collect_ec2_all(account_number, os.environ.get('EC2_WASTE_DETECTION_LAST_UPDATE'))
-   
-     
+    start_date = os.environ.get('LAMBDA_LAST_UPDATE')
+    end_date = date.today().strftime('%Y-%m-%d')
+
+    print (f"start_date = {start_date}")
+    
+    if start_date < end_date:                
+        collect_accounts_cost(account_number, start_date, end_date)
+        collect_ec2_all(account_number, start_date, end_date)    
+    else:
+        print(f"start date {start_date} and end date {end_date} are equal. exit...")
+
+    client = boto3.client('lambda')
+
+    response = client.update_function_configuration(
+    FunctionName='billingoptimizations-prod-calcBillingOptimizations',
+	Environment={
+        'Variables': {
+            'LAMBDA_LAST_UPDATE': end_date,            
+            'ELASTIC_CONNECTIONSTRING': "https://elastic:kJ12iC0bfTVXo3qhpJqRLs87@c11f5bc9787c4c268d3b960ad866adc2.eu-central-1.aws.cloud.es.io:9243"
+        }
+    },
+    )
+        
     body = {'message':'Go Serverless v1.0! Your function executed successfully!',  'input':event}
     response = {'statusCode':200, 'body':json.dumps(body)}
     return response

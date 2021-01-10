@@ -251,6 +251,48 @@ def using_boto3():
 
 def main():
 
+    
+
+    cloudwatch = boto3.client('cloudwatch')
+
+
+        
+    response = cloudwatch.get_metric_statistics(
+    Namespace='AWS/EC2',
+    Dimensions=[
+        {
+            'Name': 'InstanceId',
+            'Value': 'i-0c5d8b5f06a419b0c'
+        }
+    ],
+    MetricName="NetworkIn",
+    StartTime='2021-01-05',
+    EndTime='2021-01-10',
+    Period=3600,
+    Statistics=['Average']
+    )      
+
+    pprint.pprint(response)
+    return
+
+    session = boto3.Session()
+    ec2 = session.resource('ec2')
+    instances = ec2.instances.filter()
+
+    client = boto3.client('lambda',region_name='eu-west-1')
+    response = client.list_functions()  
+
+    pprint.pprint(response)
+    return
+
+    id = boto3.client('sts').get_caller_identity().get('Account')
+
+    name =   boto3.client('organizations').describe_account(AccountId=id).get('Account').get('Name')
+
+    print(name)
+
+    return
+
     client = boto3.client('ce')
     '''
     response = client.get_cost_and_usage(
@@ -304,6 +346,8 @@ def main():
     return
 
     client = boto3.client('sts')
+
+    
 
     response = client.get_caller_identity()
 

@@ -11,9 +11,9 @@ import datetime
 import os
 from decimal import Decimal
 
-pandas.set_option('display.max_rows', 5000)
-pandas.set_option('display.max_columns', 500)
-pandas.set_option('display.width', 1000)
+pandas.set_option('display.max_rows', 10000)
+pandas.set_option('display.max_columns', 10000)
+pandas.set_option('display.width', 10000)
 
 
 class DbService:
@@ -88,6 +88,7 @@ class DbService:
             helpers.bulk(targetES, documents, index=target_index_name,doc_type='_doc', raise_on_error=True)
         except Exception as e:
             print(e)
+            print(documents)
             raise
 
     def account_bulk_insert_elastic(self, account_list):
@@ -109,7 +110,7 @@ class DbService:
         'mappings': {            
             'properties': {                
                 'account': {'type': 'keyword'},
-                'keys': {'type': 'text'},
+                'keys': {'type': 'keyword'},
                 'amount': {'type': 'float'},
                 'start_time': {'format': 'dateOptionalTime', 'type': 'date'},
                 'end_time': {'format': 'dateOptionalTime', 'type': 'date'},                        
@@ -177,24 +178,25 @@ class DbService:
         for index, row in df_merged.iterrows():
             
             start_time = row['start_time'] 
-            cpu_utilization = row['CPUUtilization'] if 'CPUUtilization' in metric_list else ''
-            network_in = row['NetworkIn'] if 'NetworkIn' in metric_list else ''
-            network_out = row['NetworkOut'] if 'NetworkOut' in metric_list else ''      
-            network_packets_in = row['NetworkPacketsIn']  if 'NetworkPacketsIn' in metric_list else ''       
-            network_packets_out = row['NetworkPacketsOut'] if 'NetworkPacketsOut' in metric_list else ''
-            disk_write_ops = row['DiskWriteOps'] if 'DiskWriteOps' in metric_list else ''
-            disk_read_ops = row['DiskReadOps'] if 'DiskReadOps' in metric_list else ''
-            disk_write_bytes = row['DiskWriteBytes'] if 'DiskWriteBytes' in metric_list else ''
-            disk_read_bytes = row['DiskReadBytes'] if 'DiskReadBytes' in metric_list else ''
-            is_idle = row['is_cpu_utilization_idle'] if 'CPUUtilization' in metric_list else 1 * \
-                row['is_network_in_idle'] if 'NetworkIn' in metric_list else 1 * \
-                row['is_network_out_idle'] if 'NetworkOut' in metric_list else 1 * \
-                row['is_network_packets_in_idle'] if 'NetworkPacketsIn' in metric_list else 1 * \
-                row['is_network_packets_out_idle'] if 'NetworkPacketsOut' in metric_list else 1 * \
-                row['is_disk_write_ops_idle'] if 'DiskWriteOps' in metric_list else 1 * \
-                row['is_disk_read_ops_idle'] if 'DiskReadOps' in metric_list else 1 * \
-                row['is_disk_write_bytes_idle'] if 'DiskWriteBytes' in metric_list else 1 * \
-                row['is_disk_read_bytes_idle'] if 'DiskReadBytes' in metric_list else 1 
+            cpu_utilization = row['CPUUtilization'] if 'CPUUtilization' in metric_list and 'CPUUtilization' in df_merged.columns else 0
+            network_in = row['NetworkIn'] if 'NetworkIn' in metric_list and 'NetworkIn' in df_merged.columns else 0
+            network_out = row['NetworkOut'] if 'NetworkOut' in metric_list and 'NetworkOut' in df_merged.columns else 0      
+            network_packets_in = row['NetworkPacketsIn']  if 'NetworkPacketsIn' in metric_list and 'NetworkPacketsIn' in df_merged.columns else 0       
+            network_packets_out = row['NetworkPacketsOut'] if 'NetworkPacketsOut' in metric_list and 'NetworkPacketsOut' in df_merged.columns else 0
+            disk_write_ops = row['DiskWriteOps'] if 'DiskWriteOps' in metric_list and 'DiskWriteOps' in df_merged.columns else 0
+            disk_read_ops = row['DiskReadOps'] if 'DiskReadOps' in metric_list and 'DiskReadOps' in df_merged.columns else 0
+            disk_write_bytes = row['DiskWriteBytes'] if 'DiskWriteBytes' in metric_list and 'DiskWriteBytes' in df_merged.columns else 0
+            disk_read_bytes = row['DiskReadBytes'] if 'DiskReadBytes' in metric_list and 'DiskReadBytes' in df_merged.columns else 0
+
+            is_idle = row['is_cpu_utilization_idle'] if 'CPUUtilization' in metric_list and 'is_cpu_utilization_idle' in df_merged.columns else 1 * \
+                row['is_network_in_idle'] if 'NetworkIn' in metric_list and 'is_network_in_idle' in df_merged.is_network_in_idle else 1 * \
+                row['is_network_out_idle'] if 'NetworkOut' in metric_list and 'is_network_out_idle' in df_merged.columns else 1 * \
+                row['is_network_packets_in_idle'] if 'NetworkPacketsIn' in metric_list and 'is_network_packets_in_idle' in df_merged.columns else 1 * \
+                row['is_network_packets_out_idle'] if 'NetworkPacketsOut' in metric_list and 'is_network_packets_out_idle' in df_merged.columns else 1 * \
+                row['is_disk_write_ops_idle'] if 'DiskWriteOps' in metric_list and 'is_disk_write_ops_idle' in  df_merged.columns else 1 * \
+                row['is_disk_read_ops_idle'] if 'DiskReadOps' in metric_list and 'is_disk_read_ops_idle' in df_merged.columns else 1 * \
+                row['is_disk_write_bytes_idle'] if 'DiskWriteBytes' in metric_list and 'is_disk_write_bytes_idle' in df_merged.columns else 1 * \
+                row['is_disk_read_bytes_idle'] if 'DiskReadBytes' in metric_list and 'is_disk_read_bytes_idle' in df_merged.columns else 1 
 
             performance_counters = PerformanceCounters(start_time = start_time,cpu_utilization = cpu_utilization, network_in = network_in, network_out = network_out, network_packets_in = network_packets_in, network_packets_out = network_packets_out, disk_write_ops = disk_write_ops, disk_read_ops = disk_read_ops, disk_write_bytes = disk_write_bytes, disk_read_bytes = disk_read_bytes, is_idle = is_idle)
             performance_counters_list.append(performance_counters)  
