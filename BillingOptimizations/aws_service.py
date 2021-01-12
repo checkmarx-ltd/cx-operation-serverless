@@ -4,6 +4,8 @@ from ec2 import EC2
 from thresholds import Thresholds
 import pandas
 import numpy as np
+from account import Account
+
 
 class AwsService: 
 
@@ -13,8 +15,6 @@ class AwsService:
 
         client = boto3.client('ce')
         
-        #print(f" About to calculate forecast: start = {start}, end = {end}, granularity = {granularity}, metrics = {metrics}, groupby = {groupby}.")
-
         try:
             response = response = client.get_cost_forecast(
                 TimePeriod={
@@ -74,13 +74,15 @@ class AwsService:
             state = instance.state['Name']
             tags = instance.tags[0]['Value']
             try:
-                owner_id = instance.network_interfaces_attribute[0]['OwnerId']
+                account_number = instance.network_interfaces_attribute[0]['OwnerId']
+                account_name = Account.map_account_name_to_account_number(account_number)                
+                pu = Account.map_pu_to_account(account_number)
             except Exception as e:
                 pass
 
             if state == "running":
            
-                ec2 = EC2(availability_zone, instance.id, instance.instance_type, instance.launch_time, state,  instance.ebs_optimized, tags, owner_id)
+                ec2 = EC2(availability_zone, instance.id, instance.instance_type, instance.launch_time, state,  instance.ebs_optimized, tags, account_number, pu, account_name)
                 ec2_list.append(ec2)
 
         return ec2_list    

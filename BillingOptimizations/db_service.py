@@ -11,6 +11,7 @@ import datetime
 import os
 from decimal import Decimal
 
+
 pandas.set_option('display.max_rows', 10000)
 pandas.set_option('display.max_columns', 10000)
 pandas.set_option('display.width', 10000)
@@ -57,16 +58,18 @@ class DbService:
                 'state': {'type': 'keyword'},
                 'ebs_optimized': {'type': 'keyword'},
                 'tags': {'type': 'keyword'},
-                'account_number': {'type': 'keyword'},                
+                'account_number': {'type': 'keyword'},  
+                'pu': {'type': 'keyword'}, 
+                'account_name': {'type': 'keyword'},              
             }}
-        }
-        
-        targetES.indices.delete(index=target_index_name, ignore=[400, 404])
+        }                        
+
+        #targetES.indices.delete(index=target_index_name, ignore=[400, 404])
         targetES.indices.create(index = target_index_name, body = request_body, ignore=[400, 404])
 
         df = pandas.DataFrame(columns=["_id","start_time","cpu_utilization","network_in","network_out", "network_packets_in","network_packets_out", \
                 "disk_write_ops","disk_read_ops","disk_write_bytes","disk_read_bytes", "is_idle","availability_zone","instance_id","instance_type", \
-                     "launch_time", "state", "ebs_optimized", "tags", "account_number" ])      
+                     "launch_time", "state", "ebs_optimized", "tags", "account_number", "pu", "account_name"])      
 
         for performance_counters in ec2.performance_counters_list:
                        
@@ -78,7 +81,7 @@ class DbService:
                         "disk_write_bytes": performance_counters.disk_write_bytes, "disk_read_bytes":performance_counters.disk_read_bytes, \
                            "is_idle": performance_counters.is_idle, "availability_zone": ec2.availability_zone, "instance_id":ec2.instance_id, \
                                "instance_type":ec2.instance_type, "launch_time":ec2.launch_time, \
-                                   "state": ec2.state, "ebs_optimized":ec2.ebs_optimized, "tags":ec2.tags , "account_number": ec2.instance_owner_id}
+                                   "state": ec2.state, "ebs_optimized":ec2.ebs_optimized, "tags":ec2.tags , "account_number": ec2.account_number, "pu": ec2.pu, "account_name": ec2.account_name}
             
             df = df.append(new_row, ignore_index=True)
            
@@ -100,16 +103,17 @@ class DbService:
         now = datetime.datetime.now()
         target_index_name = "account-billing-" + now.strftime("%m-%Y")
 
-        targetES.indices.delete(index=target_index_name, ignore=[400, 404])
-
+        #targetES.indices.delete(index=target_index_name, ignore=[400, 404])
         request_body = {
         "settings" : {
             "number_of_shards": 5,
             "number_of_replicas": 1
         },
         'mappings': {            
-            'properties': {                
-                'account': {'type': 'keyword'},
+            'properties': { 
+                'pu': {'type': 'keyword'},   
+                'account_name': {'type': 'keyword'},          
+                'account_number': {'type': 'keyword'},
                 'keys': {'type': 'keyword'},
                 'amount': {'type': 'float'},
                 'start_time': {'format': 'dateOptionalTime', 'type': 'date'},
@@ -123,11 +127,12 @@ class DbService:
         
         targetES.indices.create(index = target_index_name, body = request_body, ignore=[400, 404])
 
-        df = pandas.DataFrame(columns=["_id","account","keys","amount","start_time","end_time","metrics","forecast_mean_value","forecast_prediction_interval_lowerbound","forecast_prediction_interval_upperbound"])
+        df = pandas.DataFrame(columns=["_id","pu", "account_name", "account_number","keys","amount","start_time","end_time","metrics","forecast_mean_value","forecast_prediction_interval_lowerbound","forecast_prediction_interval_upperbound"])
 
         for account in account_list:
 
-            new_row = {"_id": account.account_number + "-" + account.keys + "-" + datetime.datetime.strptime(account.start, '%Y-%m-%d').strftime("%Y%m%d%H%M%S"), "account":account.account_number,"keys":account.keys,\
+            new_row = {"_id": account.account_number + "-" + account.keys + "-" + datetime.datetime.strptime(account.start, '%Y-%m-%d').strftime("%Y%m%d%H%M%S"), \
+                "pu": account.pu, "account_name":account.account_name, "account_number":account.account_number,"keys":account.keys,\
                 "amount":account.amount,"start_time":account.start,"end_time":account.end,\
                     "metrics":account.metrics, "forecast_mean_value": account.forecast_mean_value, \
                         "forecast_prediction_interval_lowerbound": account.forecast_prediction_interval_lowerbound, \
@@ -146,7 +151,7 @@ class DbService:
     def print_account_list(self, account_list):
 
         for account in account_list:
-            print(f"account_number = {account.account_number}, start = {account.start}, end = {account.end}, metrics = {account.metrics}, keys = {account.keys}, amount = {account.amount}, forecast = {account.forecast_mean_value}, interval_lowerbound = {account.forecast_prediction_interval_lowerbound}, interval_upperbound = {account.forecast_prediction_interval_upperbound}")
+            print(f"pu = {account.pu}, account_name = {account.account_name}, account_number = {account.account_number}, start = {account.start}, end = {account.end}, metrics = {account.metrics}, keys = {account.keys}, amount = {account.amount}, forecast = {account.forecast_mean_value}, interval_lowerbound = {account.forecast_prediction_interval_lowerbound}, interval_upperbound = {account.forecast_prediction_interval_upperbound}")
        
     
     def create_account(self, account_number, response):
@@ -164,7 +169,10 @@ class DbService:
                 #metrics = 'AmortizedCost'
                 metrics = key_list[0]
 
-                account = Account(account_number = account_number, keys = keys, amount = amount, start = start, end = end, metrics = metrics)
+                pu = Account.map_pu_to_account(account_number)
+                account_name = Account.map_account_name_to_account_number(account_number)                
+
+                account = Account(pu = pu, account_name = account_name, account_number = account_number, keys = keys, amount = amount, start = start, end = end, metrics = metrics)
 
                 account_list.append(account)
 

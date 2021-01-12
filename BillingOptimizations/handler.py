@@ -39,16 +39,21 @@ def collect_ec2_utilization(ec2, metric_list, account_number, start_date, end_da
         if not df.empty:
             frames.append(df)           
         
-    # merge the different dataframes (cpu_utilization, network_in...) into one dataframe based on start_time        
-    if not frames == []:
-        df_merged = db_service.merge_ec2_metrics_on_start_time(frames)
-        df_merged['account_number'] = account_number   
-                
-        #convert the merged dataframe to class members to ease insert to Elasticsearch
-        ec2.performance_counters_list = db_service.create_performance_counters_list(df_merged, metric_list)
+    # merge the different dataframes (cpu_utilization, network_in...) into one dataframe based on start_time    
+    try:    
+        if not frames == []:
+            df_merged = db_service.merge_ec2_metrics_on_start_time(frames)
+            df_merged['account_number'] = account_number   
+                    
+            #convert the merged dataframe to class members to ease insert to Elasticsearch
+            ec2.performance_counters_list = db_service.create_performance_counters_list(df_merged, metric_list)
 
-        #insert the data into proper elastic index
-        response =  db_service.ec2_bulk_insert_elastic(ec2)   
+            #insert the data into proper elastic index
+            response =  db_service.ec2_bulk_insert_elastic(ec2)
+
+    except ValueError as e:
+        #happens when aws returns empty values 
+        pass   
       
 
         
@@ -78,7 +83,7 @@ def collect_ec2_all(account_number, start_date, end_date):
             threads = []    
         
         for ec2 in ec2_list:
-            print(f"instance_id: {ec2.instance_id} , owner_id: {ec2.instance_owner_id}, launch_time: {ec2.launch_time}")                
+            print(f"instance_id: {ec2.instance_id} ,pu = {ec2.pu}, account_number: {ec2.account_number}, launch_time: {ec2.launch_time}")                
                 
     except Exception as e:
         print(e)
@@ -94,7 +99,7 @@ def add_forcase_to_account_list(account_list):
         today_datetime = datetime.combine(date.today(), datetime.min.time())
         
         if account_end != today_datetime:
-            print("Cannot calculate forecast on historic data")
+            print(f"Cannot calculate forecast on historic data {account_end}")
             continue
         
         today = date.today()
