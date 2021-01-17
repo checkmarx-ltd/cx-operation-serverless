@@ -6,6 +6,7 @@ from datetime import datetime, date
 from dateutil.relativedelta import *
 from decimal import Decimal
 
+
 subprocess.call('pip3 install pandas -t /tmp/ --no-cache-dir'.split(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 subprocess.call('pip3 install elasticsearch -t /tmp/ --no-cache-dir'.split(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 subprocess.call('pip install python-dotenv -t /tmp/ --no-cache-dir'.split(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -18,13 +19,14 @@ from aws_service import AwsService
 from db_service import DbService
 from performance_counters import PerformanceCounters
 from dotenv import load_dotenv
+import pandas
 
 def collect_ec2_utilization(ec2, metric_list, account_number, start_date, end_date):
 
     aws_service = AwsService()    
     db_service = DbService()
 
-    frames = []   
+    frames = []
                 
     for metric_name in metric_list:
         statistics = 'Average'
@@ -34,16 +36,26 @@ def collect_ec2_utilization(ec2, metric_list, account_number, start_date, end_da
         start_time = start_date
         end_time = end_date
                                             
-        df = aws_service.get_aws_metric_statistics(ec2, metric_name, period, start_time, end_time, namespace, statistics)           
+        df = aws_service.get_aws_metric_statistics(ec2, metric_name, period, start_time, end_time, namespace, statistics)   
+            
         
         if not df.empty:
-            frames.append(df)           
+            frames.append(df)              
+
+    df_cost = aws_service.get_aws_cost_and_usage_with_resources(ec2 = ec2, start_time = start_date, end_time = end_date, granularity = "HOURLY", metrics = "AmortizedCost")           
+
+    if not df_cost.empty:
+        frames.append(df_cost)    
+
+    print(frames)   
         
     # merge the different dataframes (cpu_utilization, network_in...) into one dataframe based on start_time    
     try:    
         if not frames == []:
-            df_merged = db_service.merge_ec2_metrics_on_start_time(frames)
-            df_merged['account_number'] = account_number   
+
+            df_merged = db_service.merge_ec2_metrics_on_start_time(frames)           
+
+            df_merged['account_number'] = account_number
                     
             #convert the merged dataframe to class members to ease insert to Elasticsearch
             ec2.performance_counters_list = db_service.create_performance_counters_list(df_merged, metric_list)
@@ -54,10 +66,6 @@ def collect_ec2_utilization(ec2, metric_list, account_number, start_date, end_da
     except ValueError as e:
         #happens when aws returns empty values 
         pass   
-      
-
-        
-
     
 def collect_ec2_all(account_number, start_date, end_date):
     try:
@@ -93,13 +101,12 @@ def add_forcase_to_account_list(account_list):
     aws_service = AwsService() 
 
     for account in account_list:
-        #start = account.start
 
         account_end = datetime.strptime(account.end, '%Y-%m-%d')
         today_datetime = datetime.combine(date.today(), datetime.min.time())
         
         if account_end != today_datetime:
-            print(f"Cannot calculate forecast on historic data {account_end}")
+            #Cannot calculate forecast on historic data
             continue
         
         today = date.today()
@@ -130,8 +137,6 @@ def collect_accounts_cost(account_number, start_date, end_date):
     # in ordder to manipulate dates (compare, add ...), we must convert to datetime
     accounts_visibility_last_update_datetime = datetime.strptime(start_date, '%Y-%m-%d') 
 
-    print(f"start = {start_date}, end = {end_date}")
-
     granularity = 'DAILY'
     metrics = 'AMORTIZED_COST'
     groupby = 'SERVICE'
@@ -158,10 +163,9 @@ def calcBillingOptimizations(event, context):
 
     start_date = os.environ.get('LAMBDA_LAST_UPDATE')
     end_date = date.today().strftime('%Y-%m-%d')
-
-    print (f"start_date = {start_date}")
     
     if start_date < end_date:                
+        print (f"Running lambda from start_date = {start_date} to {end_date}")
         collect_accounts_cost(account_number, start_date, end_date)
         collect_ec2_all(account_number, start_date, end_date)    
     else:

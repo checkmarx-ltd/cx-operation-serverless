@@ -60,16 +60,17 @@ class DbService:
                 'tags': {'type': 'keyword'},
                 'account_number': {'type': 'keyword'},  
                 'pu': {'type': 'keyword'}, 
-                'account_name': {'type': 'keyword'},              
+                'account_name': {'type': 'keyword'},   
+                'cost': {'type': 'float'},            
             }}
         }                        
 
-        #targetES.indices.delete(index=target_index_name, ignore=[400, 404])
+        targetES.indices.delete(index=target_index_name, ignore=[400, 404])
         targetES.indices.create(index = target_index_name, body = request_body, ignore=[400, 404])
 
         df = pandas.DataFrame(columns=["_id","start_time","cpu_utilization","network_in","network_out", "network_packets_in","network_packets_out", \
                 "disk_write_ops","disk_read_ops","disk_write_bytes","disk_read_bytes", "is_idle","availability_zone","instance_id","instance_type", \
-                     "launch_time", "state", "ebs_optimized", "tags", "account_number", "pu", "account_name"])      
+                     "launch_time", "state", "ebs_optimized", "tags", "account_number", "pu", "account_name", "cost"])      
 
         for performance_counters in ec2.performance_counters_list:
                        
@@ -81,7 +82,8 @@ class DbService:
                         "disk_write_bytes": performance_counters.disk_write_bytes, "disk_read_bytes":performance_counters.disk_read_bytes, \
                            "is_idle": performance_counters.is_idle, "availability_zone": ec2.availability_zone, "instance_id":ec2.instance_id, \
                                "instance_type":ec2.instance_type, "launch_time":ec2.launch_time, \
-                                   "state": ec2.state, "ebs_optimized":ec2.ebs_optimized, "tags":ec2.tags , "account_number": ec2.account_number, "pu": ec2.pu, "account_name": ec2.account_name}
+                                   "state": ec2.state, "ebs_optimized":ec2.ebs_optimized, "tags":ec2.tags , "account_number": ec2.account_number, "pu": ec2.pu, \
+                                        "account_name": ec2.account_name, "cost": performance_counters.cost}
             
             df = df.append(new_row, ignore_index=True)
            
@@ -186,6 +188,7 @@ class DbService:
         for index, row in df_merged.iterrows():
             
             start_time = row['start_time'] 
+            cost = row['cost']
             cpu_utilization = row['CPUUtilization'] if 'CPUUtilization' in metric_list and 'CPUUtilization' in df_merged.columns else 0
             network_in = row['NetworkIn'] if 'NetworkIn' in metric_list and 'NetworkIn' in df_merged.columns else 0
             network_out = row['NetworkOut'] if 'NetworkOut' in metric_list and 'NetworkOut' in df_merged.columns else 0      
@@ -206,7 +209,7 @@ class DbService:
                 row['is_disk_write_bytes_idle'] if 'DiskWriteBytes' in metric_list and 'is_disk_write_bytes_idle' in df_merged.columns else 1 * \
                 row['is_disk_read_bytes_idle'] if 'DiskReadBytes' in metric_list and 'is_disk_read_bytes_idle' in df_merged.columns else 1 
 
-            performance_counters = PerformanceCounters(start_time = start_time,cpu_utilization = cpu_utilization, network_in = network_in, network_out = network_out, network_packets_in = network_packets_in, network_packets_out = network_packets_out, disk_write_ops = disk_write_ops, disk_read_ops = disk_read_ops, disk_write_bytes = disk_write_bytes, disk_read_bytes = disk_read_bytes, is_idle = is_idle)
+            performance_counters = PerformanceCounters(start_time = start_time,cpu_utilization = cpu_utilization, network_in = network_in, network_out = network_out, network_packets_in = network_packets_in, network_packets_out = network_packets_out, disk_write_ops = disk_write_ops, disk_read_ops = disk_read_ops, disk_write_bytes = disk_write_bytes, disk_read_bytes = disk_read_bytes, is_idle = is_idle, cost = cost)
             performance_counters_list.append(performance_counters)  
 
         return performance_counters_list

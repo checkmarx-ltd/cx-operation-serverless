@@ -5,7 +5,8 @@ from thresholds import Thresholds
 import pandas
 import numpy as np
 from account import Account
-
+from decimal import Decimal
+from datetime import datetime
 
 class AwsService: 
 
@@ -86,6 +87,55 @@ class AwsService:
                 ec2_list.append(ec2)
 
         return ec2_list    
+    
+    def get_aws_cost_and_usage_with_resources(self, ec2, start_time, end_time, granularity, metrics):
+
+        client = boto3.client('ce')
+
+        response = client.get_cost_and_usage_with_resources(
+        TimePeriod={
+            'Start': start_time,
+            'End': end_time
+        },
+        Metrics=[metrics],
+        Granularity=granularity,
+        Filter={
+            "And": 
+            [
+                {
+                    "Dimensions": { 
+                        "Key": "SERVICE",
+                        "MatchOptions": [ "EQUALS" ],
+                        "Values": [ "Amazon Elastic Compute Cloud - Compute" ]
+                    }
+                },
+                {
+                    "Dimensions": { 
+                        "Key": "RESOURCE_ID",
+                        "MatchOptions": [ "EQUALS" ],
+                        "Values": [ ec2.instance_id ]
+                    }
+                }
+            ]
+        }
+        )
+
+        df = pandas.DataFrame(columns=["cost", "start_time"])
+
+        datapoints = response["ResultsByTime"]
+
+        for datapoint in datapoints:
+
+            cost = round(Decimal(datapoint['Total']['AmortizedCost']['Amount']),2)
+            start_time = datapoint['TimePeriod']['Start']
+            start_time = datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%SZ')
+            #start_time = start_time.astimezone()
+            new_row = {"cost" : cost, "start_time": start_time}
+            df = df.append(new_row, ignore_index=True)
+
+        return df
+
+        
 
     def get_aws_metric_statistics(self, ec2, metric_name, period, start_time, end_time, namespace, statistics):
         
@@ -111,8 +161,10 @@ class AwsService:
         df = pandas.DataFrame(columns=[metric_name, "start_time"])
         
         for datapoint in datapoints:
-            new_row = {metric_name :datapoint["Average"], "start_time":datapoint["Timestamp"]}
-            df = df.append(new_row, ignore_index=True)
+            start_time = datapoint["Timestamp"].strftime("%Y-%m-%d %H:%M:%S")
+            start_time = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S")
+            new_row = {metric_name :datapoint["Average"], "start_time": start_time}
+            df = df.append(new_row, ignore_index=True)           
 
         if metric_name == 'CPUUtilization':
             df['is_cpu_utilization_idle'] = np.where(df[metric_name] < Thresholds.cpu_utilization_threshold, 1, 0)
@@ -132,6 +184,6 @@ class AwsService:
             df['is_disk_write_bytes_idle'] = np.where(df[metric_name] < Thresholds.disk_write_bytes_threshold, 1, 0)
         elif metric_name == 'DiskReadBytes':
             df['is_disk_read_bytes_idle'] = np.where(df[metric_name] < Thresholds.disk_read_bytes_threshold, 1, 0)
-
+        
         return df    
        

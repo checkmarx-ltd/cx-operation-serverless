@@ -23,7 +23,7 @@ class Account:
             return "CB"
         elif account_number in ("656509302511"):
             return "Operation"
-        elif account_number in ("359856697693", "544428519067", "425154196092", "238450497947", "185449903594"):
+        elif account_number in ("359856697693", "544428519067", "425154196092", "238450497947", "185449903594", "570334525843", "092796063756"):
             return "SAST"
         elif account_number in ("941355383184"):
             return "AST"
@@ -76,6 +76,6 @@ class Account:
         elif account_number == "238450497947":
             return "CxSastDev"
         elif account_number == "185449903594":
-            return "CxSastDevTeam17"
+            return "CxSastDevTeam17"        
         else:
             return "Other"

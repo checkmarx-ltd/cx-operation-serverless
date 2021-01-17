@@ -251,6 +251,56 @@ def using_boto3():
 
 def main():
 
+
+    dt = '2021-01-01T00:00:00Z'
+    dt_time = datetime.datetime.strptime(dt, '%Y-%m-%dT%H:%M:%SZ')
+    dt_time = dt_time.astimezone()
+    print(dt_time)
+    return
+
+    client = boto3.client('ce')
+
+    response = client.get_cost_and_usage_with_resources(
+    TimePeriod={
+        'Start': '2021-01-01',
+        'End': '2021-01-02'
+    },
+    Metrics=['AmortizedCost'],
+    Granularity='HOURLY',
+    Filter={
+         "And": 
+        [
+            {
+                "Dimensions": { 
+                    "Key": "SERVICE",
+                    "MatchOptions": [ "EQUALS" ],
+                    "Values": [ "Amazon Elastic Compute Cloud - Compute" ]
+                }
+            },
+            {
+                "Dimensions": { 
+                    "Key": "RESOURCE_ID",
+                    "MatchOptions": [ "EQUALS" ],
+                    "Values": [ "i-0d4dc0ddfe07c9259" ]
+                }
+            }
+        ]
+    }
+    )
+
+    datapoints = response["ResultsByTime"]
+
+    for datapoint in datapoints:
+        dt = datapoint['TimePeriod']['Start']
+        dt_time = datetime.datetime.strptime(dt, '%Y-%m-%dT%H:%M:%S')
+        dt_time = dt_time.astimezone()
+        print(dt_time)
+        #print(datapoint['TimePeriod']['Start'])
+        #print(datapoint['Total']['AmortizedCost']['Amount'])
+
+    #pprint.pprint(response)
+
+    return
     
 
     cloudwatch = boto3.client('cloudwatch')
