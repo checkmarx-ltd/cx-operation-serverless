@@ -46,8 +46,6 @@ def collect_ec2_utilization(ec2, metric_list, account_number, start_date, end_da
 
     if not df_cost.empty:
         frames.append(df_cost)    
-
-    print(frames)   
         
     # merge the different dataframes (cpu_utilization, network_in...) into one dataframe based on start_time    
     try:    
@@ -69,10 +67,10 @@ def collect_ec2_utilization(ec2, metric_list, account_number, start_date, end_da
     
 def collect_ec2_all(account_number, start_date, end_date):
     try:
-        #['CPUUtilization', 'NetworkOut', 'NetworkIn','DiskWriteBytes','DiskReadBytes','NetworkPacketsOut','NetworkPacketsIn','DiskWriteOps','DiskReadOps']            
-        ec2_metric_list =  os.environ.get('EC2_PERFORMANCE_METRIC')         
+        #['CPUUtilization', 'NetworkOut', 'NetworkIn','DiskWriteBytes','DiskReadBytes','NetworkPacketsOut','NetworkPacketsIn','DiskWriteOps','DiskReadOps']  
+        ec2_metric_list =  list(os.environ.get('EC2_PERFORMANCE_METRIC').split(","))
         ec2_instances = []
-        number_of_threads =  os.environ.get('EC2_NUMBER_OF_THREADS')  
+        number_of_threads =  int(os.environ.get('EC2_NUMBER_OF_THREADS'))
         
         aws_service = AwsService()    
 
