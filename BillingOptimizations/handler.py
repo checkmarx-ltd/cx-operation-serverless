@@ -69,9 +69,10 @@ def collect_ec2_utilization(ec2, metric_list, account_number, start_date, end_da
     
 def collect_ec2_all(account_number, start_date, end_date):
     try:
-        ec2_metric_list = ['CPUUtilization', 'NetworkOut', 'NetworkIn','DiskWriteBytes','DiskReadBytes','NetworkPacketsOut','NetworkPacketsIn','DiskWriteOps','DiskReadOps']            
+        #['CPUUtilization', 'NetworkOut', 'NetworkIn','DiskWriteBytes','DiskReadBytes','NetworkPacketsOut','NetworkPacketsIn','DiskWriteOps','DiskReadOps']            
+        ec2_metric_list =  os.environ.get('EC2_PERFORMANCE_METRIC')         
         ec2_instances = []
-        chunk_size = 10     
+        number_of_threads =  os.environ.get('EC2_NUMBER_OF_THREADS')  
         
         aws_service = AwsService()    
 
@@ -79,8 +80,8 @@ def collect_ec2_all(account_number, start_date, end_date):
 
         threads = []
 
-        for i in range(0,len(ec2_list), chunk_size):
-            chunk = ec2_list[i:i+chunk_size]
+        for i in range(0,len(ec2_list), number_of_threads):
+            chunk = ec2_list[i:i + number_of_threads]
             for ec2 in chunk:
                 x = threading.Thread(target=collect_ec2_utilization, args=(ec2, ec2_metric_list, account_number, start_date, end_date,))
                 threads.append(x)
@@ -178,7 +179,9 @@ def calcBillingOptimizations(event, context):
 	Environment={
         'Variables': {
             'LAMBDA_LAST_UPDATE': end_date,            
-            'ELASTIC_CONNECTIONSTRING': "https://elastic:kJ12iC0bfTVXo3qhpJqRLs87@c11f5bc9787c4c268d3b960ad866adc2.eu-central-1.aws.cloud.es.io:9243"
+            'ELASTIC_CONNECTIONSTRING': os.environ.get('ELASTIC_CONNECTIONSTRING'),
+            'EC2_PERFORMANCE_METRIC': os.environ.get('EC2_PERFORMANCE_METRIC'),               
+            'EC2_NUMBER_OF_THREADS': os.environ.get('EC2_NUMBER_OF_THREADS') 
         }
     },
     )
