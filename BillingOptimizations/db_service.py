@@ -65,7 +65,7 @@ class DbService:
             }}
         }                        
 
-        targetES.indices.delete(index=target_index_name, ignore=[400, 404])
+        #targetES.indices.delete(index=target_index_name, ignore=[400, 404])
         targetES.indices.create(index = target_index_name, body = request_body, ignore=[400, 404])
 
         df = pandas.DataFrame(columns=["_id","start_time","cpu_utilization","network_in","network_out", "network_packets_in","network_packets_out", \
