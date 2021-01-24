@@ -91,8 +91,7 @@ class AwsService:
         
         for instance in instances:
             availability_zone = instance.placement["AvailabilityZone"]           
-            state = instance.state['Name']
-            tags = instance.tags[0]['Value']
+            state = instance.state['Name']            
             try:
                 account_number = instance.network_interfaces_attribute[0]['OwnerId']
                 account_name = Account.map_account_name_to_account_number(account_number)                
@@ -102,7 +101,7 @@ class AwsService:
 
             if state == "running":
            
-                ec2 = EC2(availability_zone, instance.id, instance.instance_type, instance.launch_time, state,  instance.ebs_optimized, tags, account_number, pu, account_name)
+                ec2 = EC2(availability_zone, instance.id, instance.instance_type, instance.launch_time, state,  instance.ebs_optimized, account_number, pu, account_name)
                 ec2_list.append(ec2)
 
         return ec2_list    

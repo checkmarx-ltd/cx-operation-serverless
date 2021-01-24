@@ -251,6 +251,25 @@ def using_boto3():
 
 def main():
 
+    ec2_list = []
+    session = boto3.Session()
+    ec2 = session.resource('ec2')
+    instances = ec2.instances.filter()
+
+    
+    for instance in instances:
+        availability_zone = instance.placement["AvailabilityZone"]           
+        state = instance.state['Name']
+        tags = ""
+        #tags = instance.tags[0]['Value']
+        print(instance.tags)
+        #for tag in instance.tags:
+            #tags = tags + tag['Key'] + "=" + tag['Value'] + " "
+            #print(tag)
+        #print(tags)
+
+    return
+
     client = boto3.client('cloudwatch')
 
     metric_list = ['CPUUtilization', 'NetworkOut', 'NetworkIn','EBSWriteBytes','EBSReadBytes','DiskReadBytes','DiskWriteBytes']#'NetworkPacketsOut','NetworkPacketsIn','DiskWriteOps','DiskReadOps'] 
