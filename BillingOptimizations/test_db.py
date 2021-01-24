@@ -251,6 +251,76 @@ def using_boto3():
 
 def main():
 
+    client = boto3.client('cloudwatch')
+
+    metric_list = ['CPUUtilization', 'NetworkOut', 'NetworkIn','EBSWriteBytes','EBSReadBytes','DiskReadBytes','DiskWriteBytes']#'NetworkPacketsOut','NetworkPacketsIn','DiskWriteOps','DiskReadOps'] 
+
+    aws_service = AwsService()    
+
+    start_date = '2021-01-17'
+    end_date = '2021-01-18'
+    instance_id = 'i-0d4dc0ddfe07c9259'
+
+    ec2_list = aws_service.get_aws_describe_instances()
+
+    ec2 = ec2_list[0]
+
+    response = client.list_metrics(Namespace='AWS/EC2',
+        Dimensions=[
+        {
+            'Name': 'InstanceId',
+            'Value': ec2.instance_id
+        },
+    ])
+
+    for metric in response['Metrics']:
+        if metric['MetricName'] in metric_list:
+            print (metric['MetricName'])
+
+    #pprint.pprint(response['Metrics'])
+
+    return
+
+    frames = []
+                
+    for metric_name in metric_list:
+        statistics = 'Average'
+        namespace = 'AWS/EC2'
+        instance_id = ec2.instance_id
+        period = 3600
+        start_time = start_date
+        end_time = end_date
+                                            
+        df = aws_service.get_aws_metric_statistics(ec2, metric_name, period, start_time, end_time, namespace, statistics)   
+            
+        
+        if not df.empty:
+            frames.append(df)  
+
+    print(frames)
+
+    return
+
+    cloudwatch = boto3.client('cloudwatch')
+       
+    response = cloudwatch.get_metric_statistics(
+    Namespace='AWS/EC2',
+    Dimensions=[
+        {
+            'Name': 'InstanceId',
+            'Value': 'i-0c825168d7ad6093a'
+        }
+    ],
+    MetricName="CPUUtilization",
+    StartTime='2021-01-16',
+    EndTime='2021-01-19',
+    Period=3600,
+    Statistics=['Average']
+    )      
+
+    pprint.pprint(response)
+    return
+
 
     dt = '2021-01-01T00:00:00Z'
     dt_time = datetime.datetime.strptime(dt, '%Y-%m-%dT%H:%M:%SZ')
@@ -303,27 +373,7 @@ def main():
     return
     
 
-    cloudwatch = boto3.client('cloudwatch')
-
-
-        
-    response = cloudwatch.get_metric_statistics(
-    Namespace='AWS/EC2',
-    Dimensions=[
-        {
-            'Name': 'InstanceId',
-            'Value': 'i-0c5d8b5f06a419b0c'
-        }
-    ],
-    MetricName="NetworkIn",
-    StartTime='2021-01-05',
-    EndTime='2021-01-10',
-    Period=3600,
-    Statistics=['Average']
-    )      
-
-    pprint.pprint(response)
-    return
+    
 
     session = boto3.Session()
     ec2 = session.resource('ec2')

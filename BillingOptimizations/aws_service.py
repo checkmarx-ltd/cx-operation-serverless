@@ -10,6 +10,25 @@ from datetime import datetime
 
 class AwsService: 
 
+    def get_supported_metrics(self, ec2):
+        
+        metric_list = []
+        
+        client = boto3.client('cloudwatch')
+
+        response = client.list_metrics(Namespace='AWS/EC2',
+            Dimensions=[
+            {
+                'Name': 'InstanceId',
+                'Value': ec2.instance_id
+            },
+        ])
+
+        for metric in response['Metrics']:
+            metric_list.append(metric['MetricName'])
+
+        return metric_list
+
     def get_aws_cost_forecast(self, account_number, start, end, granularity, metrics, groupby):
         
         response = ""
@@ -126,7 +145,7 @@ class AwsService:
 
         for datapoint in datapoints:
 
-            cost = round(Decimal(datapoint['Total']['AmortizedCost']['Amount']),2)
+            cost = round(Decimal(datapoint['Total']['AmortizedCost']['Amount']),4)
             start_time = datapoint['TimePeriod']['Start']
             start_time = datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%SZ')
             #start_time = start_time.astimezone()

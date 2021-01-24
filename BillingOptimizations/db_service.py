@@ -166,7 +166,7 @@ class DbService:
             for group in row['Groups']:
                 #keys = service
                 keys = group['Keys'][0]
-                amount = round(Decimal(group['Metrics']['AmortizedCost']['Amount']),2)
+                amount = round(Decimal(group['Metrics']['AmortizedCost']['Amount']),4)
                 key_list = list(group['Metrics'].keys())
                 #metrics = 'AmortizedCost'
                 metrics = key_list[0]

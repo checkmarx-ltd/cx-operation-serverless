@@ -21,14 +21,17 @@ from performance_counters import PerformanceCounters
 from dotenv import load_dotenv
 import pandas
 
+
 def collect_ec2_utilization(ec2, metric_list, account_number, start_date, end_date):
 
     aws_service = AwsService()    
     db_service = DbService()
 
+    specific_instance_metric_list = aws_service.get_supported_metrics(ec2)
+
     frames = []
                 
-    for metric_name in metric_list:
+    for metric_name in metric_list and metric_list in specific_instance_metric_list:
         statistics = 'Average'
         namespace = 'AWS/EC2'
         instance_id = ec2.instance_id
@@ -69,6 +72,8 @@ def collect_ec2_all(account_number, start_date, end_date):
     try:
         #['CPUUtilization', 'NetworkOut', 'NetworkIn','DiskWriteBytes','DiskReadBytes','NetworkPacketsOut','NetworkPacketsIn','DiskWriteOps','DiskReadOps']  
         ec2_metric_list =  list(os.environ.get('EC2_PERFORMANCE_METRIC').split(","))
+        print(ec2_metric_list)
+        print(type(ec2_metric_list))
         ec2_instances = []
         number_of_threads =  int(os.environ.get('EC2_NUMBER_OF_THREADS'))
         
