@@ -1,6 +1,5 @@
 import pandas
 import traceback 
-from functools import reduce
 from performance_counters import PerformanceCounters
 from thresholds import Thresholds
 from account import Account
@@ -19,12 +18,6 @@ pandas.set_option('display.width', 10000)
 
 class DbService:
       
-    def merge_ec2_metrics_on_start_time (self, frames):
-
-        df_merged = reduce(lambda  left,right: pandas.merge(left,right,on=['start_time'], how='outer'), frames)  
-        return df_merged  
-
-
     def ec2_bulk_insert_elastic(self, ec2):
 
         ElasticConnectionString = os.getenv("ELASTIC_CONNECTIONSTRING")        
@@ -64,9 +57,10 @@ class DbService:
             }}
         }                        
 
-        targetES.indices.delete(index=target_index_name, ignore=[400, 404])
+        #targetES.indices.delete(index=target_index_name, ignore=[400, 404])
         targetES.indices.create(index = target_index_name, body = request_body, ignore=[400, 404])
 
+        #alias is needed for data retention policy
         targetES.indices.put_alias(index=target_index_name, name='ec2-cost', ignore=[400, 404])
 
 
@@ -131,6 +125,7 @@ class DbService:
         
         targetES.indices.create(index = target_index_name, body = request_body, ignore=[400, 404])
 
+        #alias is needed for data retention policy
         targetES.indices.put_alias(index=target_index_name, name='account-cost', ignore=[400, 404])
 
         df = pandas.DataFrame(columns=["_id","pu", "account_name", "account_number","keys","amount","start_time","end_time","metrics","forecast_mean_value","forecast_prediction_interval_lowerbound","forecast_prediction_interval_upperbound"])

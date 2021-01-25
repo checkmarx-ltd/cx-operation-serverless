@@ -259,14 +259,7 @@ def main():
     
     for instance in instances:
         availability_zone = instance.placement["AvailabilityZone"]           
-        state = instance.state['Name']
-        tags = ""
-        #tags = instance.tags[0]['Value']
-        print(instance.tags)
-        #for tag in instance.tags:
-            #tags = tags + tag['Key'] + "=" + tag['Value'] + " "
-            #print(tag)
-        #print(tags)
+        state = instance.state['Name']        
 
     return
 

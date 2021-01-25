@@ -20,6 +20,12 @@ from db_service import DbService
 from performance_counters import PerformanceCounters
 from dotenv import load_dotenv
 import pandas
+from functools import reduce
+
+def merge_ec2_metrics_on_start_time (self, frames):
+
+        df_merged = reduce(lambda  left,right: pandas.merge(left,right,on=['start_time'], how='outer'), frames)  
+        return df_merged  
 
 
 def collect_ec2_utilization(ec2, metric_list, account_number, start_date, end_date):
@@ -57,7 +63,7 @@ def collect_ec2_utilization(ec2, metric_list, account_number, start_date, end_da
     try:    
         if not frames == []:
 
-            df_merged = db_service.merge_ec2_metrics_on_start_time(frames)           
+            df_merged = merge_ec2_metrics_on_start_time(frames)           
 
             df_merged['account_number'] = account_number
                     
@@ -73,7 +79,7 @@ def collect_ec2_utilization(ec2, metric_list, account_number, start_date, end_da
     
 def collect_ec2_all(account_number, start_date, end_date):
     try:
-        #['CPUUtilization', 'NetworkOut', 'NetworkIn','DiskWriteBytes','DiskReadBytes','NetworkPacketsOut','NetworkPacketsIn','DiskWriteOps','DiskReadOps']  
+
         ec2_metric_list =  list(os.environ.get('EC2_PERFORMANCE_METRIC').split(","))      
         ec2_instances = []
         number_of_threads =  int(os.environ.get('EC2_NUMBER_OF_THREADS'))
@@ -122,8 +128,6 @@ def add_forcase_to_account_list(account_list):
         end_datetime = start_datetime.replace(day=1) + relativedelta(months=+1)
         end = end_datetime.strftime('%Y-%m-%d')
 
-        # end is first day of next month
-        #end = start.replace(day=1) + relativedelta(months=+1)
         response = aws_service.get_aws_cost_forecast(account.account_number,start, end, "MONTHLY", "AMORTIZED_COST", account.keys)
 
         if response != "":
