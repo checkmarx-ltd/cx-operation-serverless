@@ -31,7 +31,7 @@ class DbService:
         targetES = Elasticsearch(ElasticConnectionString)
 
         now = datetime.datetime.now()
-        target_index_name = "ec2-billing2-" + now.strftime("%m-%Y")
+        target_index_name = "ec2-cost-" + now.strftime("%m-%Y")
 
         request_body = {
         "settings" : {
@@ -66,6 +66,9 @@ class DbService:
 
         targetES.indices.delete(index=target_index_name, ignore=[400, 404])
         targetES.indices.create(index = target_index_name, body = request_body, ignore=[400, 404])
+
+        targetES.indices.put_alias(index=target_index_name, name='ec2-cost', ignore=[400, 404])
+
 
         df = pandas.DataFrame(columns=["_id","start_time","cpu_utilization","network_in","network_out", "ebs_write_bytes", "ebs_read_bytes", \
                 "disk_write_ops","disk_read_ops","disk_write_bytes","disk_read_bytes", "is_idle","availability_zone","instance_id","instance_type", \
@@ -102,7 +105,7 @@ class DbService:
         targetES = Elasticsearch(ElasticConnectionString)
 
         now = datetime.datetime.now()
-        target_index_name = "account-billing-" + now.strftime("%m-%Y")
+        target_index_name = "account-cost-" + now.strftime("%m-%Y")
 
         #targetES.indices.delete(index=target_index_name, ignore=[400, 404])
         request_body = {
@@ -127,6 +130,8 @@ class DbService:
         }
         
         targetES.indices.create(index = target_index_name, body = request_body, ignore=[400, 404])
+
+        targetES.indices.put_alias(index=target_index_name, name='account-cost', ignore=[400, 404])
 
         df = pandas.DataFrame(columns=["_id","pu", "account_name", "account_number","keys","amount","start_time","end_time","metrics","forecast_mean_value","forecast_prediction_interval_lowerbound","forecast_prediction_interval_upperbound"])
 
