@@ -25,7 +25,7 @@ provider:
   runtime: python3.8
 
 # you can overwrite defaults here
-  stage: prod
+  stage: prodcd 
   region: eu-west-1
 
 # you can add statements to the Lambda function's IAM Role here
@@ -111,7 +111,7 @@ functions:
 #    Define function environment variables here
     environment:
       ELASTIC_CONNECTIONSTRING: "https://elastic:kJ12iC0bfTVXo3qhpJqRLs87@c11f5bc9787c4c268d3b960ad866adc2.eu-central-1.aws.cloud.es.io:9243"
-      LAMBDA_LAST_UPDATE: "2021-01-20"
+      LAMBDA_LAST_UPDATE: "2021-01-26"
       EC2_NUMBER_OF_THREADS: "10"
       EC2_PERFORMANCE_METRIC: "CPUUtilization,NetworkOut,NetworkIn,EBSWriteBytes,EBSReadBytes,DiskReadBytes,DiskWriteBytes,DiskWriteOps,DiskReadOps"
 
