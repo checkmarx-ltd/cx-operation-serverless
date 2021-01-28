@@ -22,7 +22,7 @@ from dotenv import load_dotenv
 import pandas
 from functools import reduce
 
-def merge_ec2_metrics_on_start_time (self, frames):
+def merge_ec2_metrics_on_start_time (frames):
 
         df_merged = reduce(lambda  left,right: pandas.merge(left,right,on=['start_time'], how='outer'), frames)  
         return df_merged  
