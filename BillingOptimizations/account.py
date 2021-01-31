@@ -31,7 +31,7 @@ class Account:
             return "Architecture"
         elif account_number in ("666740670058", "006765415138"):
             return "SCA"
-        elif account_number in ("941355383184","263675485306","764065228965"):
+        elif account_number in ("941355383184","263675485306"):
             return "AST"
         elif account_number in ("866472756642"):
             return "IAST"
@@ -100,8 +100,6 @@ class Account:
         elif account_number == "457489196639":
             return "MCSFeatureThree"
         elif account_number == "354891787287":
-            return "MCSHSBCReplica"
-        elif account_number == "764065228965":
-            return "CxAstDevOps"        
+            return "MCSHSBCReplica"              
         else:
             return "Other"
