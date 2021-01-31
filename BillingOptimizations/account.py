@@ -23,16 +23,20 @@ class Account:
             return "CB"
         elif account_number in ("656509302511"):
             return "Operation"
-        elif account_number in ("359856697693", "544428519067", "425154196092", "238450497947", "185449903594", "570334525843", "092796063756"):
-            return "SAST"
-        elif account_number in ("941355383184"):
-            return "AST"
+        elif account_number in ("359856697693", "544428519067", "425154196092", "238450497947", "185449903594", "092796063756"):
+            return "SAST"        
         elif account_number in ("983555762431", "148244689188"):
             return "AST Integration"
         elif account_number in ("881053136306"):
             return "Architecture"
         elif account_number in ("666740670058", "006765415138"):
             return "SCA"
+        elif account_number in ("941355383184","263675485306","764065228965"):
+            return "AST"
+        elif account_number in ("866472756642"):
+            return "IAST"
+        elif account_number in ("002023477301","098770948573","844024982327","074002600390","185216882498","715799477975","748129348851","938742211667","457489196639","354891787287"):
+             return "CxGo"
         else:
             return "Other"
 
@@ -61,12 +65,10 @@ class Account:
             return "CxAwsMandODev"
         elif account_number == "983555762431":
             return "cxflowci"
-        elif account_number == "143039493158":
-            return "cxflowprod"
+        elif account_number == "263675485306":
+            return "CxAST-TS"        
         elif account_number == "359856697693":
-            return "CxSastAccessControlDev"
-        elif account_number == "570334525843":
-            return "CxSastAccessControlProduction"
+            return "CxSastAccessControlDev"        
         elif account_number == "092796063756":
             return "CxSastAccessControlProductionBeta"        
         elif account_number == "544428519067":
@@ -76,6 +78,30 @@ class Account:
         elif account_number == "238450497947":
             return "CxSastDev"
         elif account_number == "185449903594":
-            return "CxSastDevTeam17"        
+            return "CxSastDevTeam17"   
+        elif account_number == "866472756642":
+            return "CxAWSIastDev"                 
+        elif account_number == "002023477301":
+            return "MCSSsa"
+        elif account_number == "098770948573":
+            return "MCSPPE"
+        elif account_number == "844024982327":
+            return "MCSPPEReplica"
+        elif account_number == "074002600390":
+            return "MCSSandbox"
+        elif account_number == "185216882498":
+            return "MCSProdReplica"
+        elif account_number == "715799477975":
+            return "MCSDev"
+        elif account_number == "748129348851":
+            return "MCSFeatureOne"
+        elif account_number == "938742211667":
+            return "MCSFeatureTwo"
+        elif account_number == "457489196639":
+            return "MCSFeatureThree"
+        elif account_number == "354891787287":
+            return "MCSHSBCReplica"
+        elif account_number == "764065228965":
+            return "CxAstDevOps"        
         else:
             return "Other"
