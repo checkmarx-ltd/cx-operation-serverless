@@ -25,10 +25,13 @@ class DbService:
 
         now = datetime.datetime.now()
         target_index_name = "ec2-cost-" + now.strftime("%m-%Y")
+        index_template_name = "ec2-cost-template"
+
 
         request_body = {
+        "index_patterns": ["ec2-cost-*"],
         "settings" : {
-            "number_of_shards": 5,
+            "number_of_shards": 1,
             "number_of_replicas": 1
         },
         'mappings': {            
@@ -57,11 +60,15 @@ class DbService:
             }}
         }                        
 
+
+        if not targetES.indices.exists_template(index_template_name):
+            targetES.indices.put_template(index_template_name, request_body, create=True)
+
         #targetES.indices.delete(index=target_index_name, ignore=[400, 404])
-        targetES.indices.create(index = target_index_name, body = request_body, ignore=[400, 404])
+        #targetES.indices.create(index = target_index_name, body = request_body, ignore=[400, 404])
 
         #alias is needed for data retention policy
-        targetES.indices.put_alias(index=target_index_name, name='ec2-cost', ignore=[400, 404])
+        #targetES.indices.put_alias(index=target_index_name, name='ec2-cost', ignore=[400, 404])
 
 
         df = pandas.DataFrame(columns=["_id","start_time","cpu_utilization","network_in","network_out", "ebs_write_bytes", "ebs_read_bytes", \
@@ -100,11 +107,13 @@ class DbService:
 
         now = datetime.datetime.now()
         target_index_name = "account-cost-" + now.strftime("%m-%Y")
+        index_template_name = "account-cost-template"
 
         #targetES.indices.delete(index=target_index_name, ignore=[400, 404])
         request_body = {
+        "index_patterns": ["account-cost-*"],
         "settings" : {
-            "number_of_shards": 5,
+            "number_of_shards": 1,
             "number_of_replicas": 1
         },
         'mappings': {            
@@ -122,11 +131,14 @@ class DbService:
                 'forecast_prediction_interval_upperbound': {'type': 'float'},
             }}
         }
+
+        if not targetES.indices.exists_template(index_template_name):
+            targetES.indices.put_template(index_template_name, request_body, create=True)
         
-        targetES.indices.create(index = target_index_name, body = request_body, ignore=[400, 404])
+        #targetES.indices.create(index = target_index_name, body = request_body, ignore=[400, 404])
 
         #alias is needed for data retention policy
-        targetES.indices.put_alias(index=target_index_name, name='account-cost', ignore=[400, 404])
+        #targetES.indices.put_alias(index=target_index_name, name='account-cost', ignore=[400, 404])
 
         df = pandas.DataFrame(columns=["_id","pu", "account_name", "account_number","keys","amount","start_time","end_time","metrics","forecast_mean_value","forecast_prediction_interval_lowerbound","forecast_prediction_interval_upperbound"])
 

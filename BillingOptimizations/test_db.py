@@ -251,6 +251,53 @@ def using_boto3():
 
 def main():
 
+    targetES = Elasticsearch("https://elastic:kJ12iC0bfTVXo3qhpJqRLs87@c11f5bc9787c4c268d3b960ad866adc2.eu-central-1.aws.cloud.es.io:9243")
+
+
+    request_body = {
+        "index_patterns": ["ec2-cost-*"],
+        "settings" : {
+            "number_of_shards": 1,
+            "number_of_replicas": 1
+        },
+        'mappings': {            
+            'properties': {                
+                'start_time': {'format': 'dateOptionalTime', 'type': 'date'},
+                'cpu_utilization': {'type': 'float'},
+                'network_in': {'type': 'float'},
+                'network_out': {'type': 'float'},                
+                'disk_write_ops': {'type': 'float'},
+                'disk_read_ops': {'type': 'float'},
+                'disk_write_bytes': {'type': 'float'},
+                'disk_read_bytes': {'type': 'float'},
+                'ebs_write_bytes': {'type': 'float'},
+                'ebs_read_bytes': {'type': 'float'},
+                'is_idle': {'type': 'short'},
+                'availability_zone': {'type': 'keyword'},
+                'instance_id': {'type': 'keyword'},
+                'instance_type': {'type': 'keyword'},                
+                'launch_time': {'format': 'dateOptionalTime', 'type': 'date'},                        
+                'state': {'type': 'keyword'},
+                'ebs_optimized': {'type': 'keyword'},
+                'account_number': {'type': 'keyword'},  
+                'pu': {'type': 'keyword'}, 
+                'account_name': {'type': 'keyword'},   
+                'cost': {'type': 'float'},            
+            }}
+        }          
+
+
+    if not targetES.indices.exists_template("ec2-cost-template"):
+        targetES.indices.put_template("ec2-cost-template", request_body, create=True)
+
+
+    return
+
+
+
+
+    return
+
     ec2_list = []
     session = boto3.Session()
     ec2 = session.resource('ec2')
