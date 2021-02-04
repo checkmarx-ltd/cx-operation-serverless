@@ -32,7 +32,10 @@ class DbService:
         "index_patterns": ["ec2-cost-*"],
         "settings" : {
             "number_of_shards": 1,
-            "number_of_replicas": 1
+            "number_of_replicas": 1,
+            "index.codec": "best_compression",
+            "default_pipeline": "ec2-cost-idle-cpu"
+
         },
         'mappings': {            
             'properties': {                
@@ -114,7 +117,10 @@ class DbService:
         "index_patterns": ["account-cost-*"],
         "settings" : {
             "number_of_shards": 1,
-            "number_of_replicas": 1
+            "number_of_replicas": 1,
+            "index.codec": "best_compression",
+            "default_pipeline": "account-cost-threshold",
+
         },
         'mappings': {            
             'properties': { 
