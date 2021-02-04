@@ -17,6 +17,7 @@ var/
 *.egg
 .env
 test_db.py
+log.out
 
 # Serverless directories
 .serverless

@@ -390,40 +390,65 @@ functions:
   calcBillingOptimizations: billingoptimizations-prod-calcBillingOptimizations
 layers:
   None
+Serverless: Removing old service artifacts from S3...
 Serverless: Publishing service to the Serverless Dashboard...
 Serverless: Successfully published your service to the Serverless Dashboard: https://dashboard.serverless.com/tenants/keynanlevi/applications/billingoptimizationsapp/services/billingoptimizations/stage/prod/region/eu-west-1
 sls deploy --aws-profile 267564311969_Lambda_FullAccess
 Serverless: Deprecation Notice: Support for Node.js versions below v10 will be dropped with next major release. Please upgrade at https://nodejs.org/en/
             More Info: https://www.serverless.com/framework/docs/deprecations/#OUTDATED_NODEJS
- 
-  Fetch Error --------------------------------------------
- 
-  FetchError: request to https://api.serverless.com/core/tenants/keynanlevi/applications/billingoptimizationsapp failed, reason: socket hang up
-      at ClientRequest.<anonymous> (/usr/local/lib/node_modules/serverless/node_modules/isomorphic-fetch/node_modules/node-fetch/index.js:133:11)
-      at emitOne (events.js:116:13)
-      at ClientRequest.emit (events.js:211:7)
-      at TLSSocket.socketErrorListener (_http_client.js:387:9)
-      at emitOne (events.js:116:13)
-      at TLSSocket.emit (events.js:211:7)
-      at emitErrorNT (internal/streams/destroy.js:64:8)
-      at _combinedTickCallback (internal/process/next_tick.js:138:11)
-      at process._tickDomainCallback (internal/process/next_tick.js:218:9)
- 
-     For debugging logs, run again after setting the "SLS_DEBUG=*" environment variable.
- 
-  Get Support --------------------------------------------
-     Docs:          docs.serverless.com
-     Bugs:          github.com/serverless/serverless/issues
-     Issues:        forum.serverless.com
- 
-  Your Environment Information ---------------------------
-     Operating System:          linux
-     Node Version:              8.10.0
-     Framework Version:         1.78.1
-     Plugin Version:            3.7.0
-     SDK Version:               2.3.1
-     Components Version:        2.34.1
- 
+Serverless: Packaging service...
+Serverless: Excluding development dependencies...
+Serverless: Safeguards Processing...
+Serverless: Safeguards Results:
+
+   Summary --------------------------------------------------
+
+  running - allowed-regions   passed - allowed-regions
+  running - allowed-runtimes   passed - allowed-runtimes
+  running - allowed-stages   passed - allowed-stages
+  running - framework-version   passed - framework-version
+  running - no-secret-env-vars   passed - no-secret-env-vars
+  running - no-unsafe-wildcard-iam-permissions   warned - no-unsafe-wildcard-iam-permissions
+  running - require-cfn-role   warned - require-cfn-role
+
+   Details --------------------------------------------------
+
+   1) Warned - iamRoleStatement granting Action='cloudwatch:*'. Wildcard actions in iamRoleStatements are not permitted. iamRoleStatement granting Action='ce:*'. Wildcard actions in iamRoleStatements are not permitted. iamRoleStatement granting Action='lambda:*'. Wildcard actions in iamRoleStatements are not permitted. iamRoleStatement granting Resource='*'. Wildcard resources in iamRoleStatements are not permitted.
+      details: http://slss.io/sg-no-wild-iam-role
+      Prevent "*" permissions being used in AWS IAM Roles by checking for wildcards on Actions and Resources in grant statements.
+
+
+   2) Warned - no cfnRole set
+      details: http://slss.io/sg-require-cfn-role
+      Require the cfnRole option, which specifies a particular role for CloudFormation to assume while deploying.
+
+
+Serverless: Safeguards Summary: 5 passed, 2 warnings, 0 errors
+Serverless: Uploading CloudFormation file to S3...
+Serverless: Uploading artifacts...
+Serverless: Uploading service billingoptimizations.zip file to S3 (2.82 MB)...
+Serverless: Validating template...
+Serverless: Updating Stack...
+Serverless: Checking Stack update progress...
+.........
+Serverless: Stack update finished...
+Service Information
+service: billingoptimizations
+stage: prod
+region: eu-west-1
+stack: billingoptimizations-prod
+resources: 10
+api keys:
+  None
+endpoints:
+  None
+functions:
+  calcBillingOptimizations: billingoptimizations-prod-calcBillingOptimizations
+layers:
+  None
+Serverless: Removing old service artifacts from S3...
+Serverless: Publishing service to the Serverless Dashboard...
+Serverless: Successfully published your service to the Serverless Dashboard: https://dashboard.serverless.com/tenants/keynanlevi/applications/billingoptimizationsapp/services/billingoptimizations/stage/prod/region/eu-west-1
 sls deploy --aws-profile 759786165482_Lambda_FullAccess
 Serverless: Deprecation Notice: Support for Node.js versions below v10 will be dropped with next major release. Please upgrade at https://nodejs.org/en/
             More Info: https://www.serverless.com/framework/docs/deprecations/#OUTDATED_NODEJS
@@ -477,6 +502,7 @@ functions:
   calcBillingOptimizations: billingoptimizations-prod-calcBillingOptimizations
 layers:
   None
+Serverless: Removing old service artifacts from S3...
 Serverless: Publishing service to the Serverless Dashboard...
 Serverless: Successfully published your service to the Serverless Dashboard: https://dashboard.serverless.com/tenants/keynanlevi/applications/billingoptimizationsapp/services/billingoptimizations/stage/prod/region/eu-west-1
 sls deploy --aws-profile 771250916586_Lambda_FullAccess
@@ -532,6 +558,7 @@ functions:
   calcBillingOptimizations: billingoptimizations-prod-calcBillingOptimizations
 layers:
   None
+Serverless: Removing old service artifacts from S3...
 Serverless: Publishing service to the Serverless Dashboard...
 Serverless: Successfully published your service to the Serverless Dashboard: https://dashboard.serverless.com/tenants/keynanlevi/applications/billingoptimizationsapp/services/billingoptimizations/stage/prod/region/eu-west-1
 *******************	SCA	  ***********************
@@ -588,6 +615,7 @@ functions:
   calcBillingOptimizations: billingoptimizations-prod-calcBillingOptimizations
 layers:
   None
+Serverless: Removing old service artifacts from S3...
 Serverless: Publishing service to the Serverless Dashboard...
 Serverless: Successfully published your service to the Serverless Dashboard: https://dashboard.serverless.com/tenants/keynanlevi/applications/billingoptimizationsapp/services/billingoptimizations/stage/prod/region/eu-west-1
 sls deploy --aws-profile 666740670058_Lambda_FullAccess
@@ -643,6 +671,7 @@ functions:
   calcBillingOptimizations: billingoptimizations-prod-calcBillingOptimizations
 layers:
   None
+Serverless: Removing old service artifacts from S3...
 Serverless: Publishing service to the Serverless Dashboard...
 Serverless: Successfully published your service to the Serverless Dashboard: https://dashboard.serverless.com/tenants/keynanlevi/applications/billingoptimizationsapp/services/billingoptimizations/stage/prod/region/eu-west-1
 *******************	Architecture	  ***********************
@@ -1202,39 +1231,6 @@ layers:
   None
 Serverless: Publishing service to the Serverless Dashboard...
 Serverless: Successfully published your service to the Serverless Dashboard: https://dashboard.serverless.com/tenants/keynanlevi/applications/billingoptimizationsapp/services/billingoptimizations/stage/prod/region/eu-west-1
-sls deploy --aws-profile 185216882498_Lambda_FullAccess
-Serverless: Deprecation Notice: Support for Node.js versions below v10 will be dropped with next major release. Please upgrade at https://nodejs.org/en/
-            More Info: https://www.serverless.com/framework/docs/deprecations/#OUTDATED_NODEJS
-Serverless: Packaging service...
-Serverless: Excluding development dependencies...
- 
-  Error --------------------------------------------------
- 
-  Error: Profile 185216882498_Lambda_FullAccess does not exist
-      at Object.addProfileCredentials (/usr/local/lib/node_modules/serverless/lib/plugins/aws/provider/awsProvider.js:106:15)
-      at AwsProvider.getCredentials (/usr/local/lib/node_modules/serverless/lib/plugins/aws/provider/awsProvider.js:393:12)
-      at AwsProvider.request (/usr/local/lib/node_modules/serverless/lib/plugins/aws/provider/awsProvider.js:241:48)
-      at /usr/local/lib/node_modules/serverless/node_modules/@serverless/lib/logsCollection.js:50:42
-      at Generator.next (<anonymous>)
-      at asyncGeneratorStep (/usr/local/lib/node_modules/serverless/node_modules/@serverless/enterprise-plugin/lib/logsCollection.js:3:103)
-      at _next (/usr/local/lib/node_modules/serverless/node_modules/@serverless/enterprise-plugin/lib/logsCollection.js:5:194)
-      at <anonymous>
- 
-     For debugging logs, run again after setting the "SLS_DEBUG=*" environment variable.
- 
-  Get Support --------------------------------------------
-     Docs:          docs.serverless.com
-     Bugs:          github.com/serverless/serverless/issues
-     Issues:        forum.serverless.com
- 
-  Your Environment Information ---------------------------
-     Operating System:          linux
-     Node Version:              8.10.0
-     Framework Version:         1.78.1
-     Plugin Version:            3.7.0
-     SDK Version:               2.3.1
-     Components Version:        2.34.1
- 
 sls deploy --aws-profile 715799477975_Lambda_FullAccess
 Serverless: Deprecation Notice: Support for Node.js versions below v10 will be dropped with next major release. Please upgrade at https://nodejs.org/en/
             More Info: https://www.serverless.com/framework/docs/deprecations/#OUTDATED_NODEJS
