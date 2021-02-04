@@ -73,8 +73,6 @@ echo  "sls deploy --aws-profile 844024982327_Lambda_FullAccess"
 sls deploy --aws-profile 844024982327_Lambda_FullAccess
 echo  "sls deploy --aws-profile 074002600390_Lambda_FullAccess"
 sls deploy --aws-profile 074002600390_Lambda_FullAccess
-echo  "sls deploy --aws-profile 185216882498_Lambda_FullAccess"
-sls deploy --aws-profile 185216882498_Lambda_FullAccess
 echo  "sls deploy --aws-profile 715799477975_Lambda_FullAccess"
 sls deploy --aws-profile 715799477975_Lambda_FullAccess
 echo  "sls deploy --aws-profile 748129348851_Lambda_FullAccess"

@@ -9,6 +9,8 @@ import elasticsearch.helpers as helpers
 import datetime 
 import os
 from decimal import Decimal
+from elasticsearch.client.ingest import IngestClient
+
 
 
 pandas.set_option('display.max_rows', 10000)
@@ -22,6 +24,21 @@ class DbService:
 
         ElasticConnectionString = os.getenv("ELASTIC_CONNECTIONSTRING")        
         targetES = Elasticsearch(ElasticConnectionString)
+
+        p = IngestClient(targetES)
+
+        if not p.get_pipeline(id = "ec2-cost-idle-cpu"): 
+            p.put_pipeline(id='ec2-cost-idle-cpu', body={
+                'description': "add idle_text, cpu_percent fields",
+                'processors': [
+                {
+                    "script": {
+                    "lang": "painless",
+                    "source": "\r\n          if (ctx.containsKey(\"is_idle\")) { \r\n            String text;\r\n            int idle;\r\n            if (ctx.is_idle instanceof byte ||\r\n                ctx.is_idle instanceof short ||\r\n                ctx.is_idle instanceof int ||\r\n                ctx.is_idle instanceof long ||\r\n                ctx.is_idle instanceof float ||\r\n                ctx.is_idle instanceof double)\r\n            {\r\n                idle = (int)ctx.is_idle;\r\n            } else {  \r\n                idle = Integer.parseInt(ctx['is_idle']);\r\n            }\r\n            if (idle == 0) { \r\n              text = \"In Use\";\r\n            } else if (idle == 1) {\r\n              text = \"Potential Waste\";\r\n            } else {\r\n              text = \"\";\r\n            }\r\n            ctx['idle_text'] = text;\r\n          }\r\n          float cpu;\r\n          if (ctx.containsKey(\"cpu_utilization\")) {\r\n            if (ctx.cpu_utilization instanceof byte ||\r\n                ctx.cpu_utilization instanceof short ||\r\n                ctx.cpu_utilization instanceof int ||\r\n                ctx.cpu_utilization instanceof long ||\r\n                ctx.cpu_utilization instanceof float ||\r\n                ctx.cpu_utilization instanceof double)\r\n            {\r\n                cpu = (float)ctx.cpu_utilization/100;\r\n            } else {   \r\n              cpu = Float.parseFloat(ctx['cpu_utilization'])/100;\r\n            }\r\n            ctx['cpu_percent'] = cpu;\r\n          }\r\n        "
+                    }
+                }
+                ]
+            })
 
         now = datetime.datetime.now()
         target_index_name = "ec2-cost-" + now.strftime("%m-%Y")
@@ -107,6 +124,27 @@ class DbService:
         ElasticConnectionString = os.getenv("ELASTIC_CONNECTIONSTRING")
         
         targetES = Elasticsearch(ElasticConnectionString)
+
+        p = IngestClient(targetES)
+
+        if not p.get_pipeline(id = "account-cost-threshold"):        
+            p.put_pipeline(id='account-cost-threshold_2', body={
+                'description': "add threshold",
+                'processors': [
+                {
+                    "set": {
+                    "field": "_source.ingest_time",
+                    "value": "{{_ingest.timestamp}}"
+                    }
+                },
+                {
+                    "script": {
+                    "lang": "painless",
+                    "source": "\r\n          if (ctx.containsKey(\"pu\")) { \r\n            String unit = ctx['pu'];\r\n            int value;\r\n            if (unit == \"SAST\") { \r\n              value = 25000; \r\n            } \r\n            else if (unit == \"CxGo\") { \r\n              value = 15000; \r\n            } \r\n            else if (unit == \"AST\") { \r\n              value = 7000; \r\n            } \r\n            else if (unit == \"AST Integration\") { \r\n              value = 1000; \r\n            } \r\n            else if (unit == \"CB\") { \r\n              value = 5000; \r\n            } \r\n            else if (unit == \"SCA\") {\r\n              value = 85000; \r\n            } \r\n            else {\r\n              value = 20000; \r\n            }\r\n            ctx['threshold_value'] = value;\r\n          }\r\n        "
+                    }
+                }
+                ]
+            })
 
         now = datetime.datetime.now()
         target_index_name = "account-cost-" + now.strftime("%m-%Y")
