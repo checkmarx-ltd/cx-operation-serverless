@@ -166,34 +166,40 @@ def collect_accounts_cost(account_number, start_date, end_date):
     
 def calcBillingOptimizations(event, context):
 
-    client = boto3.client('sts')
-    response = client.get_caller_identity()
-    account_number = str(response['Account'])
+    try:
+        client = boto3.client('sts')
+        response = client.get_caller_identity()
+        account_number = str(response['Account'])
 
-    start_date = os.environ.get('LAMBDA_LAST_UPDATE')
-    end_date = date.today().strftime('%Y-%m-%d')
-    
-    if start_date < end_date:                
-        print (f"Running lambda from start_date = {start_date} to {end_date}")
-        collect_accounts_cost(account_number, start_date, end_date)
-        collect_ec2_all(account_number, start_date, end_date)    
-    else:
-        print(f"start date {start_date} and end date {end_date} are equal. exit...")
-
-    client = boto3.client('lambda')
-
-    response = client.update_function_configuration(
-    FunctionName='billingoptimizations-prod-calcBillingOptimizations',
-	Environment={
-        'Variables': {
-            'LAMBDA_LAST_UPDATE': end_date,            
-            'ELASTIC_CONNECTIONSTRING': os.environ.get('ELASTIC_CONNECTIONSTRING'),
-            'EC2_PERFORMANCE_METRIC': os.environ.get('EC2_PERFORMANCE_METRIC'),               
-            'EC2_NUMBER_OF_THREADS': os.environ.get('EC2_NUMBER_OF_THREADS') 
-        }
-    },
-    )
+        start_date = os.environ.get('LAMBDA_LAST_UPDATE')
+        end_date = date.today().strftime('%Y-%m-%d')
         
-    body = {'message':'Go Serverless v1.0! Your function executed successfully!',  'input':event}
-    response = {'statusCode':200, 'body':json.dumps(body)}
-    return response
+        if start_date < end_date:                
+            print (f"Running lambda from start_date = {start_date} to {end_date}")
+            collect_accounts_cost(account_number, start_date, end_date)
+            collect_ec2_all(account_number, start_date, end_date)    
+        else:
+            print(f"start date {start_date} and end date {end_date} are equal. exit...")
+
+        client = boto3.client('lambda')
+
+        response = client.update_function_configuration(
+        FunctionName='billingoptimizations-prod-calcBillingOptimizations',
+        Environment={
+            'Variables': {
+                'LAMBDA_LAST_UPDATE': end_date,            
+                'ELASTIC_CONNECTIONSTRING': os.environ.get('ELASTIC_CONNECTIONSTRING'),
+                'EC2_PERFORMANCE_METRIC': os.environ.get('EC2_PERFORMANCE_METRIC'),               
+                'EC2_NUMBER_OF_THREADS': os.environ.get('EC2_NUMBER_OF_THREADS') 
+            }
+        },
+        )
+            
+        body = {'message':'Cost Optimization lambda executed successfully!',  'input':event}
+        response = {'statusCode':200, 'body':json.dumps(body)}
+        return response
+
+    except Exception as e:
+        body = {'message':'Cost Optimization lambda exits with error! ' + str(e),  'input':event}
+        response = {'statusCode':400, 'body':json.dumps(body)}
+        return response
