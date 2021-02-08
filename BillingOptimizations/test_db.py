@@ -252,6 +252,22 @@ def using_boto3():
 
 def main():
 
+    aws_service = AwsService()    
+
+    ec2_list = aws_service.get_aws_describe_instances()
+
+    print(ec2_list)
+
+    ec2 = ec2_list[0]
+
+    df_cost = aws_service.get_aws_cost_and_usage_with_resources(ec2 = ec2, start_time = '2021-02-07 00:00:00', end_time = '2021-02-08 00:00:00', granularity = "HOURLY", metrics = "AmortizedCost")           
+
+    print(df_cost)
+
+    return
+
+    #get_aws_cost_and_usage_with_resources
+
     targetES = Elasticsearch("https://elastic:kJ12iC0bfTVXo3qhpJqRLs87@c11f5bc9787c4c268d3b960ad866adc2.eu-central-1.aws.cloud.es.io:9243")
 
     p = IngestClient(targetES)
