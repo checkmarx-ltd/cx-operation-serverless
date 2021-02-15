@@ -159,6 +159,12 @@ class AwsService:
         
         cloudwatch = boto3.client('cloudwatch')
 
+        start_time = start_time + 'T00:00:00Z'
+        end_time = end_time + 'T00:00:00Z'
+
+        start_time = datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%SZ')
+        end_time = datetime.strptime(end_time, '%Y-%m-%dT%H:%M:%SZ')        
+        
         response = cloudwatch.get_metric_statistics(
         Namespace=namespace,
         Dimensions=[

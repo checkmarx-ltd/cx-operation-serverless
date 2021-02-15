@@ -166,7 +166,7 @@ def collect_accounts_cost(account_number, start_date, end_date):
     
 def calcBillingOptimizations(event, context):
 
-    try:
+    try:    
         client = boto3.client('sts')
         response = client.get_caller_identity()
         account_number = str(response['Account'])

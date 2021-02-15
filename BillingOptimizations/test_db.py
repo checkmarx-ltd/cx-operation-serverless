@@ -260,7 +260,7 @@ def main():
 
     ec2 = ec2_list[0]
 
-    df_cost = aws_service.get_aws_cost_and_usage_with_resources(ec2 = ec2, start_time = '2021-02-07 00:00:00', end_time = '2021-02-08 00:00:00', granularity = "HOURLY", metrics = "AmortizedCost")           
+    df_cost = aws_service.get_aws_cost_and_usage_with_resources(ec2 = ec2, start_time = '2021-02-14T00:00:00Z', end_time = '2021-02-15T00:00:00Z', granularity = "HOURLY", metrics = "AmortizedCost")           
 
     print(df_cost)
 
